@@ -111,4 +111,4 @@ The configured source repository is [Pammyrose/carpis on GitHub](https://github.
 | `tests/` | Feature and unit tests |
 | `docs/` | Workflow documentation and diagram sources |
 
-Use `.env.example` as the configuration template. Keep actual environment credentials and personnel data out of shared source code.
+
