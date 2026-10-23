@@ -48,18 +48,6 @@ The system provides a centralized workspace for authorized personnel in the Regi
 5. **Archive or restore records:** Authorized users archive or restore employee and user records, with position availability and assignment history updated as applicable.
 6. **Monitor staffing:** Administrators review dashboard summaries and personnel charts for their permitted offices.
 
-## Security & Access
-
-The application uses password authentication, hashed passwords, session management, login throttling, and server-side validation. Administrative routes require administrator access, and organizational scope checks restrict applicable personnel and user operations.
-
-Ordinary users access their own personnel profile and account settings. Admin accounts manage records within their assigned office scope, while Super Admin accounts have administrative access across offices.
-
-Email verification routes are present, but the current User model does not implement Laravel's email verification contract, so email verification is not currently enforced by the verified middleware.
-
-Operational access is intended for authorized DENR-CAR personnel. Account roles and office assignments should be managed by designated administrators according to each user's responsibilities.
-
-Credentials, personnel datasets, environment configuration, database backups, and internal deployment details should be kept out of public documentation and shared only through approved internal channels.
-
 ## Source Code Availability
 
 Source code access is intended to be restricted to authorized project maintainers and collaborators. Requests for access should be directed to the project owner or designated DENR-CAR system administrator for review.
