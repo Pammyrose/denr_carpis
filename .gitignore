@@ -23,4 +23,6 @@ yarn-error.log
 /.vscode
 /.zed
 .env.example
+.env.hosting
+.env.local
 .htaccess
