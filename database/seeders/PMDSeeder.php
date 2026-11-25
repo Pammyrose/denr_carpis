@@ -9,7 +9,6 @@ class PMDSeeder extends Seeder
 {
     public function run()
     {
-    
 
         $positions = [
             ['OSEC-DENRB-PLO5-8-1998', 'Planning Officer V', 24],

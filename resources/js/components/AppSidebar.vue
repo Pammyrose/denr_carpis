@@ -1,48 +1,32 @@
 <script setup lang="ts">
-import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, BookUser, Users, Package2, ChartNoAxesCombined, Archive, Settings } from 'lucide-vue-next';
-import AppLogo from './AppLogo.vue';
+import { Link, usePage } from '@inertiajs/vue3';
+import { BookOpen, BookUser, BriefcaseBusiness, LayoutGrid, Users } from 'lucide-vue-next';
 import { computed } from 'vue';
-import { usePage } from '@inertiajs/vue3';
 import { route } from 'ziggy-js';
+import AppLogo from './AppLogo.vue';
 
 const { props: pageProps } = usePage();
 const user = computed(() => pageProps.auth?.user);
+const officeScope = computed(() => user.value?.office_scope || user.value?.employee?.assignment_name || 'No office assigned');
 
-const mainNavItems: NavItem[] = computed(() => {
-    const baseItems: NavItem[] = [
-      
-    ];
+const mainNavItems = computed<NavItem[]>(() => {
+    const isAdmin = user.value?.is_admin ?? 0;
 
-    if (!user.value?.is_admin) {
-        return [
-            {
-                title: 'Profile',
-                href: route('profile'), // <-- use route() here
-                icon: BookOpen,
-            }
-        ];
+    if (![1, 2].includes(isAdmin)) {
+        return [{ title: 'Profile', href: route('profile'), icon: BookOpen }];
     }
 
-        return [
-        {
-            title: 'Dashboard',
-            href: route('dashboard'),
-            icon: LayoutGrid,
-        },
-        {
-            title: 'Employee',
-            href: route('employee.index'),
-            icon: BookUser,
-        },
+    return [
+        { title: 'Dashboard', href: route('dashboard'), icon: LayoutGrid },
+        { title: 'Employee', href: route('employee.index'), icon: BookUser },
+        { title: 'Positions', href: route('positions.index'), icon: BriefcaseBusiness },
         {
             title: 'Users',
-            href: route('users.index'),
+            href: route(isAdmin === 1 ? 'users.index' : 'users_admin.index'),
             icon: Users,
         },
     ];
@@ -54,7 +38,7 @@ const mainNavItems: NavItem[] = computed(() => {
         <SidebarHeader class="bg-gradient-to-b from-gray-700 to-gray-900">
             <SidebarMenu>
                 <SidebarMenuItem>
-                    <SidebarMenuButton size="2xl" as-child class="text-white">
+                    <SidebarMenuButton size="lg" as-child class="text-white">
                         <Link :href="route('dashboard')">
                             <AppLogo />
                         </Link>
@@ -64,6 +48,10 @@ const mainNavItems: NavItem[] = computed(() => {
         </SidebarHeader>
 
         <SidebarContent class="bg-gradient-to-b from-gray-700 to-gray-900">
+            <div v-if="user?.is_admin === 2" class="mx-3 mt-2 rounded-md bg-white/10 px-3 py-2 text-xs text-white">
+                <span class="block text-white/70">Office scope</span>
+                <span class="font-medium">{{ officeScope }}</span>
+            </div>
             <NavMain :items="mainNavItems" />
         </SidebarContent>
 

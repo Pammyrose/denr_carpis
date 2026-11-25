@@ -17,6 +17,4 @@ class Position extends Model
         'org_code',
         'status',
     ];
-
-    
 }

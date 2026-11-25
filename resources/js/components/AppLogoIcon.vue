@@ -13,5 +13,5 @@ defineProps<Props>();
 </script>
 
 <template>
-<img src="denr_logo.png" alt="DENR Logo">
+    <img src="denr_logo.png" alt="DENR Logo" />
 </template>

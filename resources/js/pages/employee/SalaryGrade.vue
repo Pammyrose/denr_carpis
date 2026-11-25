@@ -1,10 +1,8 @@
-
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { useForm } from '@inertiajs/vue3';
 import Button from '@/components/ui/button/Button.vue';
 import Label from '@/components/ui/label/Label.vue';
-import { PropType } from 'vue';
+import { useForm } from '@inertiajs/vue3';
+import { ref, watch } from 'vue';
 
 const props = defineProps<{
     positions: { value: string; label: string; salary_grade: string | null }[]; // Maps to item_code, name, salary_grade
@@ -36,18 +34,24 @@ const salaryGradeOptions = ref([
 ]);
 
 // Watch for changes in preselectedItemCode to update item_code
-watch(() => props.preselectedItemCode, (newItemCode) => {
-    salaryGradeForm.item_code = newItemCode || '';
-    // Set salary_grade based on the selected position
-    const selectedPosition = props.positions.find(p => p.value === newItemCode);
-    salaryGradeForm.salary_grade = selectedPosition?.salary_grade || '';
-});
+watch(
+    () => props.preselectedItemCode,
+    (newItemCode) => {
+        salaryGradeForm.item_code = newItemCode || '';
+        // Set salary_grade based on the selected position
+        const selectedPosition = props.positions.find((p) => p.value === newItemCode);
+        salaryGradeForm.salary_grade = selectedPosition?.salary_grade || '';
+    },
+);
 
 // Watch for changes in item_code to update salary_grade
-watch(() => salaryGradeForm.item_code, (newItemCode) => {
-    const selectedPosition = props.positions.find(p => p.value === newItemCode);
-    salaryGradeForm.salary_grade = selectedPosition?.salary_grade || '';
-});
+watch(
+    () => salaryGradeForm.item_code,
+    (newItemCode) => {
+        const selectedPosition = props.positions.find((p) => p.value === newItemCode);
+        salaryGradeForm.salary_grade = selectedPosition?.salary_grade || '';
+    },
+);
 
 const validateSalaryGrade = () => {
     salaryGradeErrors.value = {};
@@ -66,9 +70,10 @@ const submitSalaryGrade = () => {
         preserveScroll: true,
         onSuccess: (page) => {
             console.log('Salary grade submission successful');
-            const updatedPosition = page.props.flash.position || {
+            const flash = page.props.flash as { position?: { value: string; label: string; salary_grade: string } };
+            const updatedPosition = flash.position || {
                 value: salaryGradeForm.item_code, // Maps to item_code
-                label: props.positions.find(p => p.value === salaryGradeForm.item_code)?.label || '',
+                label: props.positions.find((p) => p.value === salaryGradeForm.item_code)?.label || '',
                 salary_grade: salaryGradeForm.salary_grade, // Maps to salary_grade
             };
             emit('store-salary-grade', updatedPosition);
@@ -90,7 +95,7 @@ const submitSalaryGrade = () => {
             <select
                 id="item_code"
                 v-model="salaryGradeForm.item_code"
-                class="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                class="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 pr-10 pl-3 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
             >
                 <option value="" disabled>Select Position</option>
                 <option
@@ -102,36 +107,24 @@ const submitSalaryGrade = () => {
                     {{ position.label }}
                 </option>
             </select>
-            <span v-if="salaryGradeErrors.item_code" class="text-red-600 text-sm">{{ salaryGradeErrors.item_code }}</span>
+            <span v-if="salaryGradeErrors.item_code" class="text-sm text-red-600">{{ salaryGradeErrors.item_code }}</span>
         </div>
         <div>
             <Label for="salary_grade">Salary Grade</Label>
             <select
                 id="salary_grade"
                 v-model="salaryGradeForm.salary_grade"
-                class="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                class="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 pr-10 pl-3 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
             >
                 <option v-for="option in salaryGradeOptions" :key="option.value" :value="option.value">
                     {{ option.label }}
                 </option>
             </select>
-            <span v-if="salaryGradeErrors.salary_grade" class="text-red-600 text-sm">{{ salaryGradeErrors.salary_grade }}</span>
+            <span v-if="salaryGradeErrors.salary_grade" class="text-sm text-red-600">{{ salaryGradeErrors.salary_grade }}</span>
         </div>
         <div class="flex justify-end gap-3">
-            <Button
-                type="button"
-                @click="emit('close')"
-                class="bg-gray-200 text-gray-800 hover:bg-gray-300"
-            >
-                Cancel
-            </Button>
-            <Button
-                type="submit"
-                class="bg-blue-600 text-white hover:bg-blue-700"
-                :disabled="salaryGradeForm.processing"
-            >
-                Submit
-            </Button>
+            <Button type="button" @click="emit('close')" class="bg-gray-200 text-gray-800 hover:bg-gray-300"> Cancel </Button>
+            <Button type="submit" class="bg-blue-600 text-white hover:bg-blue-700" :disabled="salaryGradeForm.processing"> Submit </Button>
         </div>
     </form>
 </template>

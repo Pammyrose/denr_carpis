@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use App\Models\Employee;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 class ProfileController extends Controller
 {
@@ -19,8 +19,9 @@ class ProfileController extends Controller
 
         // Check authenticated user
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             Log::error('ProfileController@show: No authenticated user found');
+
             return Inertia::render('Profile', [
                 'user' => null,
                 'error' => 'You must be logged in to view this page.',
@@ -53,12 +54,21 @@ class ProfileController extends Controller
             ]);
         }
 
+        $fullName = $employee
+            ? trim(implode(' ', array_filter([
+                $employee->first_name,
+                $employee->middle_name,
+                $employee->last_name,
+                $employee->suffix,
+            ])))
+            : 'Unknown User';
+
         // Build profileUser array
         $profileUser = [
             'id' => $user->id ?? 0,
-            'full_name' => $user->name ?? 'Unknown User',
+            'full_name' => $fullName,
             'email' => $user->email ?? 'N/A',
-            'role' => isset($user->is_admin) ? ($user->is_admin ? 'Admin' : 'User') : 'User',
+            'role' => $user->role,
             'assets' => [],
             'employee' => null, // New: Employee details
         ];
@@ -112,6 +122,4 @@ class ProfileController extends Controller
             'user' => $profileUser,
         ]);
     }
-
-    
 }

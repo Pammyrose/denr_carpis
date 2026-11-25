@@ -15,17 +15,14 @@ return new class extends Migration
             $table->string('name');
             $table->string('desc')->nullable();
             $table->string('salary_grade')->nullable();
-$table->enum('status', ['Vacant', 'Occupied'])
-                  ->default('Vacant')
-                  ->index();
+            $table->enum('status', ['Vacant', 'Occupied'])
+                ->default('Vacant')
+                ->index();
             $table->timestamps();
-
 
             $table->index('name');
         });
 
-
-        
     }
 
     public function down(): void

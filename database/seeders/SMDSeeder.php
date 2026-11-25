@@ -9,7 +9,6 @@ class SMDSeeder extends Seeder
 {
     public function run()
     {
-    
 
         $positions = [
             ['OSEC-DENRB-ENG5-9-1998', 'Engineer V (Geodetic Engineer)', 24],

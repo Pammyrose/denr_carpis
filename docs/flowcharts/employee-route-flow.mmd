@@ -1,0 +1,15 @@
+flowchart LR
+    A[/employee] --> B[index]
+    C[/employee/create] --> D[create]
+    E[POST /employee] --> F[store]
+    G[/employee/{id}/edit] --> H[edit]
+    I[PUT /employee/{id}] --> J[update]
+    K[DELETE /employee/{id}] --> L[destroy]
+    M[/employee/archived] --> N[archived]
+    O[POST /employee/{id}/unarchive] --> P[unarchive]
+
+    D --> R[getDropdownData]
+    R --> S[orgUnits]
+    R --> T[positions]
+    R --> U[assignmentPlaces]
+    R --> V[empStatuses]

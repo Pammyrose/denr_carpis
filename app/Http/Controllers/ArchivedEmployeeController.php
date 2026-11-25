@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\ArchivedEmployee;
-use App\Models\Position;
 use App\Models\ArchivedPosition;
 use App\Models\AssignmentPlace;
 use App\Models\OrgUnit;
+use App\Models\Position;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
@@ -30,8 +30,6 @@ class ArchivedEmployeeController extends Controller
 
                 $assignment = AssignmentPlace::find($employee->assignment_id);
                 $orgUnit = OrgUnit::find($employee->org_unit_id);
-
-                
 
                 return [
                     'id' => $employee->id,
@@ -63,6 +61,7 @@ class ArchivedEmployeeController extends Controller
             Log::error('ArchivedEmployeeController: Failed to fetch archived employees', [
                 'error' => $e->getMessage(),
             ]);
+
             return Inertia::render('Archived', [
                 'archivedEmployees' => [],
                 'error' => 'Failed to load archived employees. Please try again later.',

@@ -36,10 +36,10 @@ const submit = () => {
         </div>
 
         <form @submit.prevent="submit" class="flex flex-col gap-6">
-            <div class="grid gap-6 text-black font-bold dark:text-black ">
-                <div class="grid gap-2 text-black font-bold dark:text-black ">
+            <div class="grid gap-6 font-bold text-black dark:text-black">
+                <div class="grid gap-2 font-bold text-black dark:text-black">
                     <Label for="email">Email address</Label>
-                    <Input 
+                    <Input
                         id="email"
                         type="email"
                         required
@@ -53,7 +53,7 @@ const submit = () => {
                     <InputError :message="form.errors.email" />
                 </div>
 
-                <div class="grid gap-2 text-black font-bold dark:text-black">
+                <div class="grid gap-2 font-bold text-black dark:text-black">
                     <div class="flex items-center justify-between">
                         <Label for="password">Password</Label>
                         <TextLink v-if="canResetPassword" :href="route('password.request')" class="text-sm" :tabindex="5">
@@ -73,20 +73,23 @@ const submit = () => {
                     <InputError :message="form.errors.password" />
                 </div>
 
-                <div class="flex items-center justify-between text-black font-bold dark:text-black">
+                <div class="flex items-center justify-between font-bold text-black dark:text-black">
                     <Label for="remember" class="flex items-center space-x-3">
                         <Checkbox id="remember" v-model="form.remember" :tabindex="3" class="border border-black" />
                         <span>Remember me</span>
                     </Label>
                 </div>
 
-                <Button type="submit" class="mt-4 w-full bg-black text-white hover:bg-gray-800 hover:text-white" :tabindex="4" :disabled="form.processing">
+                <Button
+                    type="submit"
+                    class="mt-4 w-full bg-black text-white hover:bg-gray-800 hover:text-white"
+                    :tabindex="4"
+                    :disabled="form.processing"
+                >
                     <LoaderCircle v-if="form.processing" class="h-4 w-4 animate-spin" />
                     Log in
                 </Button>
             </div>
-
- 
         </form>
     </AuthBase>
 </template>

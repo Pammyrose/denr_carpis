@@ -9,8 +9,6 @@ class ORDSeeder extends Seeder
 {
     public function run()
     {
-   
- 
 
         $positions = [
             ['OSEC-DENRB-SRCDO-20-2014', 'Senior Communications Development Officer', 18],

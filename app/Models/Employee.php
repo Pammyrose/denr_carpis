@@ -3,10 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Model;
 
 class Employee extends Model
 {
@@ -24,7 +24,7 @@ class Employee extends Model
         'assignment_name',
         'div_sec_unit',
         'contact_no',
-        
+
     ];
 
     public function user(): BelongsTo
@@ -55,5 +55,11 @@ class Employee extends Model
     public function otherInfo(): HasOne
     {
         return $this->hasOne(OtherInfo::class);
+    }
+
+    public function positionHistories(): HasMany
+    {
+        return $this->hasMany(EmployeePositionHistory::class, 'employee_id')
+            ->orderByDesc('recorded_at');
     }
 }

@@ -2,15 +2,15 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\PositionStatus;
+use Illuminate\Database\Seeder;
 
 class PositionStatusSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
-public function run(): void
+    public function run(): void
     {
         $statuses = [
             ['status' => 'vacant',    'remarks' => 'Position is available'],

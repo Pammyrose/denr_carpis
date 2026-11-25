@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
-import { usePage, Head, Link, router } from '@inertiajs/vue3';
-import AppLayout from '@/layouts/AppLayout.vue';
 import Button from '@/components/ui/button/Button.vue';
+import AppLayout from '@/layouts/AppLayout.vue';
+import { Head, router, usePage } from '@inertiajs/vue3';
+import { computed, onMounted, ref, watch } from 'vue';
 
 // Define the ArchivedInventory interface to match the data structure from InventoryController
 interface ArchivedInventory {
@@ -84,7 +84,7 @@ watch(
             }, 3000);
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 // Breadcrumbs
@@ -110,10 +110,12 @@ const filteredArchivedInventory = computed(() => {
         return props.archivedInventory;
     }
     const query = searchQuery.value.toLowerCase().trim();
-    return props.archivedInventory.filter(item => {
+    return props.archivedInventory.filter((item) => {
         return (
-            (item.id?.toLowerCase().includes(query) || '') ||
-            (item.asset_id?.toLowerCase().includes(query) || '') ||
+            item.id?.toLowerCase().includes(query) ||
+            '' ||
+            item.asset_id?.toLowerCase().includes(query) ||
+            '' ||
             item.name.toLowerCase().includes(query) ||
             item.category.toLowerCase().includes(query) ||
             item.location.toLowerCase().includes(query) ||
@@ -134,28 +136,32 @@ const openConfirmUnarchiveModal = (inventoryId: string) => {
 
 const unarchiveInventory = (inventoryId: string) => {
     console.log('Archived.vue: Unarchiving inventory:', inventoryId);
-    router.post(route('inventory.unarchive', inventoryId), {}, {
-        preserveScroll: true,
-        onSuccess: () => {
-            console.log('Archived.vue: Unarchive successful for inventory:', inventoryId);
-            alertMessage.value = `Asset ${inventoryId} unarchived successfully`;
-            alertType.value = 'success';
-            setTimeout(() => {
-                alertMessage.value = '';
-                alertType.value = '';
-            }, 3000);
+    router.post(
+        route('inventory.unarchive', inventoryId),
+        {},
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                console.log('Archived.vue: Unarchive successful for inventory:', inventoryId);
+                alertMessage.value = `Asset ${inventoryId} unarchived successfully`;
+                alertType.value = 'success';
+                setTimeout(() => {
+                    alertMessage.value = '';
+                    alertType.value = '';
+                }, 3000);
+            },
+            onError: (errors) => {
+                console.error('Archived.vue: Unarchive failed:', errors);
+                const errorMessage = Object.values(errors).join(', ') || 'Failed to unarchive asset';
+                alertMessage.value = errorMessage;
+                alertType.value = 'error';
+                setTimeout(() => {
+                    alertMessage.value = '';
+                    alertType.value = '';
+                }, 3000);
+            },
         },
-        onError: (errors) => {
-            console.error('Archived.vue: Unarchive failed:', errors);
-            const errorMessage = Object.values(errors).join(', ') || 'Failed to unarchive asset';
-            alertMessage.value = errorMessage;
-            alertType.value = 'error';
-            setTimeout(() => {
-                alertMessage.value = '';
-                alertType.value = '';
-            }, 3000);
-        },
-    });
+    );
 };
 </script>
 
@@ -168,10 +174,10 @@ const unarchiveInventory = (inventoryId: string) => {
             <div
                 v-if="alertMessage || props.error"
                 :class="{
-                    'bg-green-100 border-green-400 text-green-700': alertType === 'success',
-                    'bg-red-100 border-red-400 text-red-700': alertType === 'error' || props.error,
+                    'border-green-400 bg-green-100 text-green-700': alertType === 'success',
+                    'border-red-400 bg-red-100 text-red-700': alertType === 'error' || props.error,
                 }"
-                class="border-l-4 p-4 mb-4 rounded-r-md"
+                class="mb-4 rounded-r-md border-l-4 p-4"
                 role="alert"
             >
                 <p class="font-medium">{{ alertType === 'success' ? 'Success' : 'Error' }}</p>
@@ -179,17 +185,16 @@ const unarchiveInventory = (inventoryId: string) => {
             </div>
 
             <!-- Search Input -->
-            <div class="flex justify-end items-center mb-4">
-  
+            <div class="mb-4 flex items-center justify-end">
                 <div class="relative w-full max-w-md">
                     <input
                         v-model="searchQuery"
                         type="text"
                         placeholder="Search archived assets..."
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     />
                     <svg
-                        class="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+                        class="absolute top-1/2 right-3 h-5 w-5 -translate-y-1/2 transform text-gray-400"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -201,9 +206,9 @@ const unarchiveInventory = (inventoryId: string) => {
             </div>
 
             <!-- Archived Inventory Table -->
-            <div class="relative overflow-x-auto shadow-md sm:rounded-lg mt-4">
-                <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                    <thead class="text-xs text-white uppercase bg-gradient-to-b from-green-300 to-green-600">
+            <div class="relative mt-4 overflow-x-auto shadow-md sm:rounded-lg">
+                <table class="w-full text-left text-sm text-gray-500 dark:text-gray-400">
+                    <thead class="bg-gradient-to-b from-green-300 to-green-600 text-xs text-white uppercase">
                         <tr>
                             <th scope="col" class="px-4 py-3">Asset ID</th>
                             <th scope="col" class="px-4 py-3 text-center">Name</th>
@@ -222,9 +227,9 @@ const unarchiveInventory = (inventoryId: string) => {
                         <tr
                             v-for="item in filteredArchivedInventory"
                             :key="item.id"
-                            class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                            class="border-b bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-600"
                         >
-                            <th scope="row" class="px-4 py-1 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                            <th scope="row" class="px-4 py-1 font-medium whitespace-nowrap text-gray-900 dark:text-white">
                                 {{ item.id || item.asset_id || 'N/A' }}
                             </th>
                             <td class="px-2 py-1 text-center">{{ item.name || 'N/A' }}</td>
@@ -237,28 +242,28 @@ const unarchiveInventory = (inventoryId: string) => {
                             <td class="px-2 py-1 text-center">
                                 <span
                                     :class="{
-                                        'text-white bg-yellow-600': item.status === 'Good',
-                                        'text-white bg-red-700': item.status === 'Check',
-                                        'text-white bg-green-600': item.status === 'Repair',
-                                        'text-white bg-blue-700': item.status === 'Upgrade',
+                                        'bg-yellow-600 text-white': item.status === 'Good',
+                                        'bg-red-700 text-white': item.status === 'Check',
+                                        'bg-green-600 text-white': item.status === 'Repair',
+                                        'bg-blue-700 text-white': item.status === 'Upgrade',
                                     }"
-                                    class="font-medium rounded-full text-sm px-5 py-1.5 text-center"
+                                    class="rounded-full px-5 py-1.5 text-center text-sm font-medium"
                                 >
                                     {{ item.status || 'N/A' }}
                                 </span>
                             </td>
                             <td class="px-2 py-1 text-center">{{ item.archived_at || 'N/A' }}</td>
-                            <td class="px-4 py-1 flex justify-center items-center gap-1">
+                            <td class="flex items-center justify-center gap-1 px-4 py-1">
                                 <Button
                                     @click="openConfirmUnarchiveModal(item.id)"
-                                    class="font-medium text-blue-600 bg-transparent hover:bg-transparent hover:underline border-0 shadow-none"
+                                    class="border-0 bg-transparent font-medium text-blue-600 shadow-none hover:bg-transparent hover:underline"
                                 >
                                     Unarchive
                                 </Button>
                             </td>
                         </tr>
                         <tr v-if="!filteredArchivedInventory.length && !props.error">
-                            <td colspan="8" class="text-center py-4">No archived assets found.</td>
+                            <td colspan="8" class="py-4 text-center">No archived assets found.</td>
                         </tr>
                     </tbody>
                 </table>

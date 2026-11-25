@@ -12,21 +12,17 @@ class Admin
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @param  \Closure(\Illuminate\Http\Request): (\Illuminate\Http\Response|\Illuminate\Http\RedirectResponse)  $next
      * @return \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
      */
-    public function handle(Request $request, Closure $next)
+    public function handle(Request $request, Closure $next, int ...$allowedRoles)
     {
-        Log::info('Admin middleware triggered', [
-            'user_authenticated' => Auth::check(),
-            'user_id' => Auth::check() ? Auth::id() : null,
-            'is_admin' => Auth::check() ? Auth::user()->is_admin : null,
-            'current_url' => $request->url()
-        ]);
+        $allowedRoles = $allowedRoles ?: [1, 2];
+        $role = (int) Auth::user()?->is_admin;
 
-        if (Auth::check() && Auth::user()->is_admin == 0) {
-            Log::info('Redirecting non-admin user to profile', ['user_id' => Auth::id()]);
+        if (! Auth::check() || ! in_array($role, $allowedRoles, true)) {
+            Log::warning('Redirecting non-admin user to profile', ['user_id' => Auth::id()]);
+
             return redirect()->route('profile');
         }
 

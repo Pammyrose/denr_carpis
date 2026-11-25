@@ -1,0 +1,47 @@
+flowchart TD
+    CARPIS[CARPIS System]
+    
+    CARPIS --> AUTH[Authentication & Authorization]
+    AUTH --> LOGIN[Login/Register]
+    AUTH --> PWDRESET[Password Reset]
+    AUTH --> VERIFY[Email Verification]
+    AUTH --> ADMIN[Admin Role Management]
+    
+    CARPIS --> EMP[Employee Management]
+    EMP --> EMPCRUD[CRUD: Create/Read/Update/Delete]
+    EMP --> EMPARCH[Archive/Unarchive Employees]
+    EMP --> EMPINFO[Personal Info: Name, Sex, Contact, DOB]
+    EMP --> EMPPOS[Position & Assignment]
+    EMP --> EMPDIV[Division/Section/Unit Assignment]
+    EMP --> EMPSALARY[Salary Grade Tracking]
+    EMP --> EMPIMPORT[Excel Import]
+    
+    CARPIS --> INV[Inventory Management]
+    INV --> INVCRUD[CRUD: Create/Read/Update/Delete]
+    INV --> INVARCH[Archive Inventory Items]
+    INV --> INVDETAILS[Asset Details: Serial, Property No, Condition]
+    INV --> INVASSIGN[Assign Assets to Employees]
+    INV --> INVQR[QR Code Generation & Tagging]
+    INV --> INVIMAGE[Asset Image Upload]
+    
+    CARPIS --> USER[User Management]
+    USER --> USERCRUD[CRUD: Create/Read/Update/Delete Users]
+    USER --> USERARCH[Archive/Unarchive Users]
+    USER --> USERADMIN[Admin User Index View]
+    
+    CARPIS --> DASH[Dashboard & Analytics]
+    DASH --> DASHSTATS[Employee Statistics by Unit/Assignment]
+    DASH --> DASHCHART[Gender Distribution Charts]
+    DASH --> DASHFILLED[Filled Positions Tracking]
+    
+    CARPIS --> ORG[Organization Setup]
+    ORG --> ORGUNIT[Create Org Units (Div/Sec)]
+    ORG --> POS[Create Positions with Item Codes]
+    ORG --> POSSTATUS[Position Status: Vacant/Occupied]
+    ORG --> ASSIGN[Create Assignment Places]
+    ORG --> SALARY[Assign Salary Grades to Positions]
+    
+    CARPIS --> PROFILE[User Profile & Settings]
+    PROFILE --> PROF[View/Edit Profile]
+    PROFILE --> PROFPWD[Change Password]
+    PROFILE --> PROFAPP[Appearance Settings]

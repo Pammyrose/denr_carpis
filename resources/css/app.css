@@ -165,3 +165,40 @@
         @apply bg-background text-foreground;
     }
 }
+
+@keyframes app-alert-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-0.5rem);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+:where([role='alert'], [role='status']) {
+    animation: app-alert-fade-in 600ms ease-out both;
+}
+
+.app-alert-leave-active {
+    transition:
+        opacity 500ms ease-in,
+        transform 500ms ease-in;
+}
+
+.app-alert-leave-to {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :where([role='alert'], [role='status']) {
+        animation: none;
+    }
+
+    .app-alert-leave-active {
+        transition: none;
+    }
+}

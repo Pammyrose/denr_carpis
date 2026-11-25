@@ -1,26 +1,23 @@
-
 <script setup lang="ts">
-import { ref, watch, onMounted, nextTick, computed } from 'vue';
-import { useForm } from '@inertiajs/vue3';
 import Button from '@/components/ui/button/Button.vue';
 import Input from '@/components/ui/input/Input.vue';
 import Label from '@/components/ui/label/Label.vue';
+import AssignmentPlaces from '@/pages/employee/AssignmentPlaces.vue';
 import Modal from '@/pages/employee/Modal.vue';
 import OrgUnitForm from '@/pages/employee/OrgUnitForm.vue';
-import SalaryGradeForm from '@/pages/employee/SalaryGrade.vue';
-import AssignmentPlaces from '@/pages/employee/AssignmentPlaces.vue';
 import PositionForm from '@/pages/employee/PositionForm.vue';
+import SalaryGradeForm from '@/pages/employee/SalaryGrade.vue';
+import { useForm } from '@inertiajs/vue3';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 
 const props = defineProps<{
     orgUnits?: { value: string; label: string }[];
-    positions?: { value: string; label: string; salary_grade: string | null; item_code: string; org_code: string }[];
+    positions?: { value: string; label: string; salary_grade: string | null; item_code: string; org_code: string; status: string }[];
     assignmentPlaces?: { value: string; label: string }[];
     empStatuses?: { value: string; label: string }[];
     error?: string;
     close: () => void;
 }>();
-
-const emit = defineEmits(['close']);
 
 const orgUnitsLocal = ref(props.orgUnits || []);
 const assignmentOptions = ref(props.assignmentPlaces || []);
@@ -57,7 +54,6 @@ const form = useForm({
     date_last_promotion: '',
     civil_service: '',
     education: '',
-    
 });
 
 const errors = ref<{ [key: string]: string }>({});
@@ -78,7 +74,7 @@ watch(
             ? [{ value: selectedPosition.salary_grade, label: selectedPosition.salary_grade }]
             : [{ value: '', label: 'Select Salary Grade' }];
         form.salary_grade = selectedPosition?.salary_grade || '';
-    }
+    },
 );
 
 // Debug watchers for form fields
@@ -86,14 +82,14 @@ watch(
     () => form.position_name,
     (newValue) => {
         console.log('form.position_name updated to:', newValue, 'Positions available:', positionsLocal.value);
-    }
+    },
 );
 
 watch(
     () => form.assignment_name,
     (newValue) => {
         console.log('form.assignment_name updated to:', newValue, 'Assignments available:', assignmentOptions.value);
-    }
+    },
 );
 
 const validate = () => {
@@ -109,8 +105,7 @@ const validate = () => {
     if (!form.div_sec_unit) errors.value.div_sec_unit = 'Division Section Unit is required';
     if (!form.password) errors.value.password = 'Password is required';
     if (!form.password_confirmation) errors.value.password_confirmation = 'Password confirmation is required';
-    if (form.password !== form.password_confirmation)
-        errors.value.password_confirmation = 'Passwords do not match';
+    if (form.password !== form.password_confirmation) errors.value.password_confirmation = 'Passwords do not match';
     if (!form.date_of_birth) errors.value.date_of_birth = 'Date of birth is required';
     return Object.keys(errors.value).length === 0;
 };
@@ -168,14 +163,17 @@ const addOrgUnit = async (newOrgUnit: { value: string; label: string }) => {
     closeModal();
 };
 
-const addSalaryGrade = async (updatedPosition: { value: string; label: string; salary_grade: string | null; item_code: string; org_code: string }) => {
+const addSalaryGrade = async (updatedPosition: {
+    value: string;
+    label: string;
+    salary_grade: string | null;
+    item_code: string;
+    org_code: string;
+    status: string;
+}) => {
     const positionIndex = positionsLocal.value.findIndex((p) => p.value === updatedPosition.value);
     if (positionIndex >= 0) {
-        positionsLocal.value = [
-            ...positionsLocal.value.slice(0, positionIndex),
-            updatedPosition,
-            ...positionsLocal.value.slice(positionIndex + 1),
-        ];
+        positionsLocal.value = [...positionsLocal.value.slice(0, positionIndex), updatedPosition, ...positionsLocal.value.slice(positionIndex + 1)];
     } else {
         positionsLocal.value = [...positionsLocal.value, updatedPosition];
     }
@@ -192,14 +190,28 @@ const addAssignmentPlace = async (newAssignmentPlace: { value: string; label: st
         assignmentOptions.value = [...assignmentOptions.value, newAssignmentPlace];
     }
     form.assignment_name = newAssignmentPlace.value;
-    console.log('Added assignment place:', newAssignmentPlace, 'form.assignment_name:', form.assignment_name, 'assignmentOptions:', assignmentOptions.value);
+    console.log(
+        'Added assignment place:',
+        newAssignmentPlace,
+        'form.assignment_name:',
+        form.assignment_name,
+        'assignmentOptions:',
+        assignmentOptions.value,
+    );
     await nextTick();
     const assignmentSelect = document.getElementById('assignment_name') as HTMLSelectElement;
     if (assignmentSelect) assignmentSelect.focus();
     closeModal();
 };
 
-const addPosition = async (newPosition: { value: string; label: string; salary_grade: string | null; item_code: string; org_code: string }) => {
+const addPosition = async (newPosition: {
+    value: string;
+    label: string;
+    salary_grade: string | null;
+    item_code: string;
+    org_code: string;
+    status: string;
+}) => {
     if (!positionsLocal.value.find((pos) => pos.value === newPosition.value)) {
         positionsLocal.value = [...positionsLocal.value, newPosition];
     }
@@ -227,9 +239,7 @@ const addAssignment = () => {
 };
 
 const vacantPositions = computed(() => {
-    return positionsLocal.value.filter(pos => 
-        !pos.label.includes('(Occupied)') && (!pos.status || pos.status !== 'Occupied')
-    );
+    return positionsLocal.value.filter((pos) => pos.status?.trim().toLowerCase() === 'vacant');
 });
 </script>
 
@@ -239,28 +249,28 @@ const vacantPositions = computed(() => {
         <div
             v-if="alertMessage"
             :class="{
-                'bg-green-100 border-green-400 text-green-700': alertType === 'success',
-                'bg-red-100 border-red-400 text-red-700': alertType === 'error',
+                'border-green-400 bg-green-100 text-green-700': alertType === 'success',
+                'border-red-400 bg-red-100 text-red-700': alertType === 'error',
             }"
-            class="border-l-4 p-4 mb-4 rounded-r-md"
+            class="mb-4 rounded-r-md border-l-4 p-4"
             role="alert"
         >
             <p class="font-medium">{{ alertType === 'success' ? 'Success' : 'Error' }}</p>
             <p>{{ alertMessage }}</p>
         </div>
 
-        <form @submit.prevent="submit" class="space-y-6 ">
+        <form @submit.prevent="submit" class="space-y-6">
             <h2 class="text-lg font-semibold text-gray-900">Create Employee</h2>
-            <div v-if="Object.keys(errors).length" class="text-red-600 text-sm mb-4">
+            <div v-if="Object.keys(errors).length" class="mb-4 text-sm text-red-600">
                 <p v-for="(error, field) in errors" :key="field">{{ error }}</p>
             </div>
 
             <!-- Name Fields -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-black">
+            <div class="grid grid-cols-1 gap-4 text-black sm:grid-cols-2 md:grid-cols-4">
                 <div>
                     <Label for="first_name" class="text-xs md:text-sm">First Name</Label>
                     <Input id="first_name" v-model="form.first_name" />
-                    <span v-if="errors.first_name" class="text-red-600 text-sm">{{ errors.first_name }}</span>
+                    <span v-if="errors.first_name" class="text-sm text-red-600">{{ errors.first_name }}</span>
                 </div>
                 <div>
                     <Label for="middle_name" class="text-xs md:text-sm">Middle Name</Label>
@@ -269,7 +279,7 @@ const vacantPositions = computed(() => {
                 <div>
                     <Label for="last_name" class="text-xs md:text-sm">Last Name</Label>
                     <Input id="last_name" v-model="form.last_name" />
-                    <span v-if="errors.last_name" class="text-red-600 text-sm">{{ errors.last_name }}</span>
+                    <span v-if="errors.last_name" class="text-sm text-red-600">{{ errors.last_name }}</span>
                 </div>
                 <div>
                     <Label for="suffix" class="text-xs md:text-sm">Suffix</Label>
@@ -278,161 +288,183 @@ const vacantPositions = computed(() => {
             </div>
 
             <!-- Org/Position/Salary -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-black">
+            <div class="grid grid-cols-1 gap-4 text-black sm:grid-cols-2 md:grid-cols-4">
                 <div>
                     <Label for="sex" class="text-xs md:text-sm">Sex</Label>
-                    <select id="sex" v-model="form.sex" class="w-full p-2 border rounded">
+                    <select id="sex" v-model="form.sex" class="w-full rounded border p-2">
                         <option value="" disabled>Select Sex</option>
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
                     </select>
-                    <span v-if="errors.sex" class="text-red-600 text-sm">{{ errors.sex }}</span>
+                    <span v-if="errors.sex" class="text-sm text-red-600">{{ errors.sex }}</span>
                 </div>
                 <div class="relative">
                     <Label for="div_sec_unit" class="text-xs md:text-sm">Div Sec Unit</Label>
-                    <select id="div_sec_unit" v-model="form.div_sec_unit" class="w-full p-2 border rounded" :key="orgUnitsLocal.length">
+                    <select id="div_sec_unit" v-model="form.div_sec_unit" class="w-full rounded border p-2" :key="orgUnitsLocal.length">
                         <option value="" disabled>Select Division Section Unit</option>
                         <option v-for="unit in orgUnitsLocal" :key="unit.value" :value="unit.value">
                             {{ unit.label }}
                         </option>
                     </select>
-                    <Button type="button" @click="openModal('orgUnit')" class="absolute right-1 top-9 bg-gray-300 text-gray-600 hover:bg-gray-500 hover:text-white">+</Button>
-                    <span v-if="errors.div_sec_unit" class="text-red-600 text-sm">{{ errors.div_sec_unit }}</span>
+                    <Button
+                        type="button"
+                        @click="openModal('orgUnit')"
+                        class="absolute top-9 right-1 bg-gray-300 text-gray-600 hover:bg-gray-500 hover:text-white"
+                        >+</Button
+                    >
+                    <span v-if="errors.div_sec_unit" class="text-sm text-red-600">{{ errors.div_sec_unit }}</span>
                 </div>
                 <div class="relative">
-    <Label for="position_name" class="text-xs md:text-sm">Position <span class="text-gray-500 text-xs">(Vacant only)</span></Label>
-    <select 
-        id="position_name" 
-        v-model="form.position_name" 
-        class="w-full p-2 border rounded" 
-        :key="vacantPositions.length"
-    >
-        <option value="" disabled>Select Position</option>
-        <option v-for="pos in vacantPositions" :key="pos.value" :value="pos.value">
-            {{ pos.item_code }} - {{ pos.label.replace(' (Occupied)', '') }}
-        </option>
-    </select>
-    <Button 
-        type="button" 
-        @click="openModal('position')" 
-        class="absolute right-1 top-9 bg-gray-300 text-gray-600 hover:bg-gray-500 hover:text-white"
-    >
-        +
-    </Button>
-    <span v-if="errors.position_name" class="text-red-600 text-sm">{{ errors.position_name }}</span>
-</div>
+                    <Label for="position_name" class="text-xs md:text-sm">Position <span class="text-xs text-gray-500">(Vacant only)</span></Label>
+                    <select id="position_name" v-model="form.position_name" class="w-full rounded border p-2" :key="vacantPositions.length">
+                        <option value="" disabled>Select Position</option>
+                        <option v-for="pos in vacantPositions" :key="pos.value" :value="pos.value">
+                            {{ pos.item_code }} - {{ pos.label.replace(' (Occupied)', '') }}
+                        </option>
+                    </select>
+                    <Button
+                        type="button"
+                        @click="openModal('position')"
+                        class="absolute top-9 right-1 bg-gray-300 text-gray-600 hover:bg-gray-500 hover:text-white"
+                    >
+                        +
+                    </Button>
+                    <span v-if="errors.position_name" class="text-sm text-red-600">{{ errors.position_name }}</span>
+                </div>
                 <div class="relative">
                     <Label for="salary_grade" class="text-xs md:text-sm">Salary Grade</Label>
-                    <select id="salary_grade" v-model="form.salary_grade" disabled class="w-full p-2 border rounded">
+                    <select id="salary_grade" v-model="form.salary_grade" disabled class="w-full rounded border p-2">
                         <option v-for="opt in salaryGradeOptions" :key="opt.value" :value="opt.value">
                             {{ opt.label }}
                         </option>
                     </select>
-                    <Button type="button" @click="openSalaryGradeModal" class="absolute right-1 top-9 bg-gray-300 text-gray-600 hover:bg-gray-500 hover:text-white">+</Button>
+                    <Button
+                        type="button"
+                        @click="openSalaryGradeModal"
+                        class="absolute top-9 right-1 bg-gray-300 text-gray-600 hover:bg-gray-500 hover:text-white"
+                        >+</Button
+                    >
                 </div>
             </div>
 
             <!-- Status/Assignment/Email -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-black">
-    <div>
-    <!-- Mobile: Emp Status -->
-    <Label for="emp_status" class="text-xs md:hidden">Emp Status</Label>
+            <div class="grid grid-cols-1 gap-4 text-black sm:grid-cols-2 md:grid-cols-4">
+                <div>
+                    <!-- Mobile: Emp Status -->
+                    <Label for="emp_status" class="text-xs md:hidden">Emp Status</Label>
 
-    <!-- Desktop (md+): Employee Status -->
-    <Label for="emp_status" class="hidden md:block md:text-sm">Employee Status</Label>
+                    <!-- Desktop (md+): Employee Status -->
+                    <Label for="emp_status" class="hidden md:block md:text-sm">Employee Status</Label>
 
-    <select id="emp_status" v-model="form.emp_status" class="w-full p-2 border rounded">
-        <option value="" disabled>Select Employee Status</option>
-        <option v-for="status in employeeStatuses" :key="status.value" :value="status.value">
-            {{ status.label }}
-        </option>
-    </select>
+                    <select id="emp_status" v-model="form.emp_status" class="w-full rounded border p-2">
+                        <option value="" disabled>Select Employee Status</option>
+                        <option v-for="status in employeeStatuses" :key="status.value" :value="status.value">
+                            {{ status.label }}
+                        </option>
+                    </select>
 
-    <span v-if="errors.emp_status" class="text-red-600 text-sm">{{ errors.emp_status }}</span>
-</div>
+                    <span v-if="errors.emp_status" class="text-sm text-red-600">{{ errors.emp_status }}</span>
+                </div>
 
                 <div class="relative">
                     <Label for="assignment_name" class="text-xs md:text-sm">Assignment</Label>
-                    <select id="assignment_name" v-model="form.assignment_name" class="w-full p-2 border rounded" :key="assignmentOptions.length">
+                    <select id="assignment_name" v-model="form.assignment_name" class="w-full rounded border p-2" :key="assignmentOptions.length">
                         <option value="" disabled>Select Assignment</option>
                         <option v-for="opt in assignmentOptions" :key="opt.value" :value="opt.value">
                             {{ opt.label }}
                         </option>
                     </select>
-                    <Button type="button" @click="addAssignment" class="absolute right-1 top-9 bg-gray-300 text-gray-600 hover:bg-gray-500 hover:text-white">+</Button>
-                    <span v-if="errors.assignment_name" class="text-red-600 text-sm">{{ errors.assignment_name }}</span>
+                    <Button
+                        type="button"
+                        @click="addAssignment"
+                        class="absolute top-9 right-1 bg-gray-300 text-gray-600 hover:bg-gray-500 hover:text-white"
+                        >+</Button
+                    >
+                    <span v-if="errors.assignment_name" class="text-sm text-red-600">{{ errors.assignment_name }}</span>
                 </div>
                 <div>
                     <Label for="email" class="text-xs md:text-sm">Email</Label>
                     <Input id="email" type="email" v-model="form.email" />
-                    <span v-if="errors.email" class="text-red-600 text-sm">{{ errors.email }}</span>
+                    <span v-if="errors.email" class="text-sm text-red-600">{{ errors.email }}</span>
                 </div>
-                                <div>
+                <div>
                     <Label for="contact_no" class="text-xs md:text-sm">Contact No.</Label>
                     <Input id="contact_no" v-model="form.contact_no" />
-                    <span v-if="errors.contact_no" class="text-red-600 text-sm">{{ errors.contact_no }}</span>
+                    <span v-if="errors.contact_no" class="text-sm text-red-600">{{ errors.contact_no }}</span>
                 </div>
             </div>
 
             <!-- Additional Info Fields -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-black">
+            <div class="grid grid-cols-1 gap-4 text-black sm:grid-cols-2 md:grid-cols-3">
                 <div>
                     <Label for="date_of_birth" class="text-xs md:text-sm">Date of Birth</Label>
-                    <Input id="date_of_birth" type="date" class="rounded-md border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" v-model="form.date_of_birth" />
-                    <span v-if="errors.date_of_birth" class="text-red-600 text-sm">{{ errors.date_of_birth }}</span>
+                    <Input
+                        id="date_of_birth"
+                        type="date"
+                        class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                        v-model="form.date_of_birth"
+                    />
+                    <span v-if="errors.date_of_birth" class="text-sm text-red-600">{{ errors.date_of_birth }}</span>
                 </div>
                 <div>
                     <Label for="tin_no" class="text-xs md:text-sm">TIN No</Label>
                     <Input id="tin_no" v-model="form.tin_no" />
-                    <span v-if="errors.tin_no" class="text-red-600 text-sm">{{ errors.tin_no }}</span>
+                    <span v-if="errors.tin_no" class="text-sm text-red-600">{{ errors.tin_no }}</span>
                 </div>
-                                <div>
+                <div>
                     <Label for="civil_service" class="text-xs md:text-sm">Civil Service</Label>
                     <Input id="civil_service" v-model="form.civil_service" />
-                    <span v-if="errors.civil_service" class="text-red-600 text-sm">{{ errors.civil_service }}</span>
+                    <span v-if="errors.civil_service" class="text-sm text-red-600">{{ errors.civil_service }}</span>
                 </div>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2  gap-4 text-black">               
+            <div class="grid grid-cols-1 gap-4 text-black sm:grid-cols-2">
                 <div>
                     <Label for="date_appointment" class="text-xs md:text-sm">Date of Appointment</Label>
-                    <Input id="date_appointment" type="date" class="rounded-md border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" v-model="form.date_appointment" />
-                    <span v-if="errors.date_appointment" class="text-red-600 text-sm">{{ errors.date_appointment }}</span>
+                    <Input
+                        id="date_appointment"
+                        type="date"
+                        class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                        v-model="form.date_appointment"
+                    />
+                    <span v-if="errors.date_appointment" class="text-sm text-red-600">{{ errors.date_appointment }}</span>
                 </div>
                 <div>
                     <Label for="date_last_promotion" class="text-xs md:text-sm">Date of Last Promotion</Label>
-                    <Input id="date_last_promotion" type="date" class="rounded-md border-gray-300 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" v-model="form.date_last_promotion" />
-                    <span v-if="errors.date_last_promotion" class="text-red-600 text-sm">{{ errors.date_last_promotion }}</span>
+                    <Input
+                        id="date_last_promotion"
+                        type="date"
+                        class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                        v-model="form.date_last_promotion"
+                    />
+                    <span v-if="errors.date_last_promotion" class="text-sm text-red-600">{{ errors.date_last_promotion }}</span>
                 </div>
-</div><div class="gap-4 text-black">
+            </div>
+            <div class="gap-4 text-black">
                 <div class="col-span-2">
                     <Label for="education" class="text-xs md:text-sm">Education</Label>
-                    <textarea id="education" v-model="form.education" class="w-full p-2 border rounded-md"></textarea>
-                    <span v-if="errors.education" class="text-red-600 text-sm">{{ errors.education }}</span>
+                    <textarea id="education" v-model="form.education" class="w-full rounded-md border p-2"></textarea>
+                    <span v-if="errors.education" class="text-sm text-red-600">{{ errors.education }}</span>
                 </div>
             </div>
 
             <!-- Password Fields -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-black">
+            <div class="grid grid-cols-1 gap-4 text-black sm:grid-cols-2">
                 <div>
                     <Label for="password" class="text-xs md:text-sm">Password</Label>
                     <Input id="password" type="password" v-model="form.password" />
-                    <span v-if="errors.password" class="text-red-600 text-sm">{{ errors.password }}</span>
+                    <span v-if="errors.password" class="text-sm text-red-600">{{ errors.password }}</span>
                 </div>
                 <div>
                     <Label for="password_confirmation" class="text-xs md:text-sm">Confirm Password</Label>
                     <Input id="password_confirmation" type="password" v-model="form.password_confirmation" />
-                    <span v-if="errors.password_confirmation" class="text-red-600 text-sm">{{ errors.password_confirmation }}</span>
+                    <span v-if="errors.password_confirmation" class="text-sm text-red-600">{{ errors.password_confirmation }}</span>
                 </div>
             </div>
 
             <!-- Form Actions -->
             <div class="flex justify-end gap-3">
-                <Button type="button" @click="props.close" class="bg-gray-200 text-gray-800 hover:bg-gray-300">
-                    Cancel
-                </Button>
-                <Button type="submit" class="bg-blue-600 text-white hover:bg-blue-700" :disabled="form.processing">
-                    Submit
-                </Button>
+                <Button type="button" @click="props.close" class="bg-gray-200 text-gray-800 hover:bg-gray-300"> Cancel </Button>
+                <Button type="submit" class="bg-blue-600 text-white hover:bg-blue-700" :disabled="form.processing"> Submit </Button>
             </div>
         </form>
 
@@ -441,10 +473,13 @@ const vacantPositions = computed(() => {
             <template #header>
                 <h2 class="text-lg font-semibold text-gray-900">
                     {{
-                        modalContent === 'orgUnit' ? 'Add Division Section Unit' :
-                        modalContent === 'salaryGrade' ? 'Update Salary Grade' :
-                        modalContent === 'assignmentPlace' ? 'Add Assignment Place' :
-                        'Add Position'
+                        modalContent === 'orgUnit'
+                            ? 'Add Division Section Unit'
+                            : modalContent === 'salaryGrade'
+                              ? 'Update Salary Grade'
+                              : modalContent === 'assignmentPlace'
+                                ? 'Add Assignment Place'
+                                : 'Add Position'
                     }}
                 </h2>
             </template>
@@ -465,7 +500,9 @@ const vacantPositions = computed(() => {
 </template>
 
 <style scoped>
-select, input, textarea {
+select,
+input,
+textarea {
     width: 100%;
     padding: 0.5rem;
     border: 1px solid #d1d5db;
@@ -488,15 +525,10 @@ textarea {
         height: 2rem;
     }
 
-  
-
-form{
+    form {
         max-height: 90vh;
-    overflow-y: auto;
-    padding-right: 0.5rem;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+    }
 }
-
-
-}
-
 </style>

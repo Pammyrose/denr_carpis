@@ -9,7 +9,6 @@ class EnforcementSeeder extends Seeder
 {
     public function run()
     {
- 
 
         $positions = [
             ['OSEC-DENRB-DMO5-144-2014', 'Development Management Officer V', 24],

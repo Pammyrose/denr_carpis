@@ -2,16 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Inventory;
 use App\Models\Employee;
+use App\Models\Inventory;
+use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
-use Endroid\QrCode\QrCode;
-use Endroid\QrCode\Writer\PngWriter;
-use Illuminate\Support\Facades\Storage;
 
 class InventoryController extends Controller
 {
@@ -19,10 +19,10 @@ class InventoryController extends Controller
     {
         $assets = Inventory::all()->map(function ($item) {
             $assignedTo = $item->assigned ? Employee::find($item->assigned) : null;
-            $fullName = $assignedTo 
+            $fullName = $assignedTo
                 ? trim("{$assignedTo->first_name} {$assignedTo->middle_name} {$assignedTo->last_name}")
                 : 'Unassigned';
-            
+
             $imageUrl = $item->image ? Storage::url($item->image) : null;
             Log::info('Asset Processing', [
                 'asset_id' => $item->asset_id,
@@ -58,6 +58,7 @@ class InventoryController extends Controller
 
         $employees = Employee::all()->map(function ($employee) {
             $fullName = trim("{$employee->first_name} {$employee->middle_name} {$employee->last_name}");
+
             return [
                 'id' => $employee->id,
                 'full_name' => $fullName ?: 'Unnamed Employee',
@@ -76,6 +77,7 @@ class InventoryController extends Controller
     {
         $employees = Employee::all()->map(function ($employee) {
             $fullName = trim("{$employee->first_name} {$employee->middle_name} {$employee->last_name}");
+
             return [
                 'id' => $employee->id,
                 'full_name' => $fullName ?: 'Unnamed Employee',
@@ -95,14 +97,15 @@ class InventoryController extends Controller
             // Check if the request is for archiving an inventory item
             if ($request->has('archive_inventory_id')) {
                 $inventory = Inventory::where('asset_id', $request->archive_inventory_id)->first();
-                if (!$inventory) {
+                if (! $inventory) {
                     Log::error('InventoryController: Inventory not found for archiving', [
                         'archive_inventory_id' => $request->archive_inventory_id,
                     ]);
+
                     return back()->withErrors(['general' => 'Inventory item not found']);
                 }
                 DB::beginTransaction();
-    
+
                 $archivedData = [
                     'id' => $inventory->id,
                     'asset_id' => $inventory->asset_id,
@@ -126,30 +129,30 @@ class InventoryController extends Controller
                     'image' => $inventory->image,
                     'archived_at' => now()->toDateTimeString(),
                 ];
-    
+
                 $filePath = 'archived_inventory.json';
                 $archivedInventory = Storage::disk('local')->exists($filePath)
                     ? json_decode(Storage::disk('local')->get($filePath), true)
                     : [];
                 $archivedInventory[$inventory->asset_id] = $archivedData;
-    
-                if (!Storage::disk('local')->put($filePath, json_encode($archivedInventory, JSON_PRETTY_PRINT))) {
+
+                if (! Storage::disk('local')->put($filePath, json_encode($archivedInventory, JSON_PRETTY_PRINT))) {
                     Log::error('InventoryController: Failed to write to archived_inventory.json', [
                         'path' => $filePath,
                         'data' => $archivedData,
                     ]);
                     throw new \Exception('Failed to write to archived inventory file');
                 }
-    
+
                 Log::info('InventoryController: Archiving inventory to storage', $archivedData);
-    
+
                 $inventory->delete();
                 DB::commit();
-    
+
                 Log::info('InventoryController: Inventory archived via store', [
                     'inventory_id' => $inventory->asset_id,
                 ]);
-    
+
                 return redirect()->route('inventory.index')->with('message', 'Inventory archived successfully');
             }
 
@@ -182,6 +185,7 @@ class InventoryController extends Controller
                     'errors' => $validator->errors()->all(),
                     'input' => $request->all(),
                 ]);
+
                 return back()->withErrors($validator->errors())->withInput();
             }
 
@@ -219,12 +223,13 @@ class InventoryController extends Controller
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString(),
                     ]);
+
                     return back()->withErrors(['image' => 'Failed to store image'])->withInput();
                 }
             }
 
             // Generate unique asset_id (e.g., based on property_no or timestamp)
-            $data['asset_id'] = 'A-' . strtoupper(uniqid()); // Example: INV-5F7A3B2C1D
+            $data['asset_id'] = 'A-'.strtoupper(uniqid()); // Example: INV-5F7A3B2C1D
 
             // Create inventory item
             $inventory = Inventory::create($data);
@@ -244,96 +249,102 @@ class InventoryController extends Controller
                 'trace' => $e->getTraceAsString(),
                 'input' => $request->all(),
             ]);
-            return back()->withErrors(['general' => 'Failed to create inventory item: ' . $e->getMessage()])->withInput();
+
+            return back()->withErrors(['general' => 'Failed to create inventory item: '.$e->getMessage()])->withInput();
         }
     }
 
     public function archived()
-{
-    try {
-        $filePath = 'archived_inventory.json';
-        if (!Storage::disk('local')->exists($filePath)) {
-            Log::warning('InventoryController: Archived inventory file does not exist', ['path' => $filePath]);
+    {
+        try {
+            $filePath = 'archived_inventory.json';
+            if (! Storage::disk('local')->exists($filePath)) {
+                Log::warning('InventoryController: Archived inventory file does not exist', ['path' => $filePath]);
+
+                return Inertia::render('inventory/Archived', [
+                    'archivedInventory' => [],
+                    'error' => 'No archived inventory found. Archive file does not exist.',
+                ]);
+            }
+
+            $fileContents = Storage::disk('local')->get($filePath);
+            if (empty($fileContents)) {
+                Log::warning('InventoryController: Archived inventory file is empty', ['path' => $filePath]);
+
+                return Inertia::render('inventory/Archived', [
+                    'archivedInventory' => [],
+                    'error' => 'No archived inventory found. Archive file is empty.',
+                ]);
+            }
+
+            $archivedInventory = json_decode($fileContents, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                Log::error('InventoryController: Failed to parse archived_inventory.json', [
+                    'path' => $filePath,
+                    'json_error' => json_last_error_msg(),
+                ]);
+
+                return Inertia::render('inventory/Archived', [
+                    'archivedInventory' => [],
+                    'error' => 'Failed to parse archived inventory: '.json_last_error_msg(),
+                ]);
+            }
+
+            $formattedInventory = array_map(function ($item) {
+                $assignedTo = isset($item['assigned']) && $item['assigned'] ? Employee::find($item['assigned']) : null;
+                $fullName = $assignedTo
+                    ? trim("{$assignedTo->first_name} {$assignedTo->middle_name} {$assignedTo->last_name}")
+                    : 'Unassigned';
+
+                return [
+                    'id' => $item['asset_id'],
+                    'asset_id' => $item['asset_id'],
+                    'name' => $item['name'] ?? 'N/A',
+                    'category' => $item['category'] ?? 'N/A',
+                    'location' => $item['location'] ?? 'N/A',
+                    'purchase_date' => $item['purchase_date'] ?? 'N/A',
+                    'value' => $item['value'] ?? 0,
+                    'condition' => $item['condition'] ?? 'N/A',
+                    'assigned_to' => $item['assigned_to_name'] ?? 'Unassigned',
+                    'employee_id' => isset($item['assigned']) ? $item['assigned'] : null,
+                    'status' => $item['status'] ?? 'N/A',
+                    'property_no' => $item['property_no'] ?? 'N/A',
+                    'serial_no' => $item['serial_no'] ?? 'N/A',
+                    'serviceable' => $item['serviceable'] ?? 'N/A',
+                    'unserviceable' => $item['unserviceable'] ?? 'N/A',
+                    'coa_representative' => $item['coa_representative'] ?? 'N/A',
+                    'coa_date' => $item['coa_date'] ?? 'N/A',
+                    'assigned_date' => $item['assigned_date'] ?? 'N/A',
+                    'unit_qty' => $item['unit_qty'] ?? 0,
+                    'return_date' => $item['return_date'] ?? null,
+                    'image' => isset($item['image']) && $item['image'] ? Storage::url($item['image']) : null,
+                    'archived_at' => $item['archived_at'] ?? 'N/A',
+                ];
+            }, array_values($archivedInventory));
+
+            Log::info('InventoryController: Fetched archived inventory from storage', [
+                'inventory_count' => count($formattedInventory),
+                'data' => $formattedInventory,
+            ]);
+
+            return Inertia::render('inventory/Archived', [
+                'archivedInventory' => $formattedInventory,
+                'error' => null,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('InventoryController: Failed to fetch archived inventory', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return Inertia::render('inventory/Archived', [
                 'archivedInventory' => [],
-                'error' => 'No archived inventory found. Archive file does not exist.',
+                'error' => 'Failed to load archived inventory: '.$e->getMessage(),
             ]);
         }
-
-        $fileContents = Storage::disk('local')->get($filePath);
-        if (empty($fileContents)) {
-            Log::warning('InventoryController: Archived inventory file is empty', ['path' => $filePath]);
-            return Inertia::render('inventory/Archived', [
-                'archivedInventory' => [],
-                'error' => 'No archived inventory found. Archive file is empty.',
-            ]);
-        }
-
-        $archivedInventory = json_decode($fileContents, true);
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            Log::error('InventoryController: Failed to parse archived_inventory.json', [
-                'path' => $filePath,
-                'json_error' => json_last_error_msg(),
-            ]);
-            return Inertia::render('inventory/Archived', [
-                'archivedInventory' => [],
-                'error' => 'Failed to parse archived inventory: ' . json_last_error_msg(),
-            ]);
-        }
-
-        $formattedInventory = array_map(function ($item) {
-            $assignedTo = isset($item['assigned']) && $item['assigned'] ? Employee::find($item['assigned']) : null;
-            $fullName = $assignedTo 
-                ? trim("{$assignedTo->first_name} {$assignedTo->middle_name} {$assignedTo->last_name}")
-                : 'Unassigned';
-            return [
-                'id' => $item['asset_id'],
-                'asset_id' => $item['asset_id'],
-                'name' => $item['name'] ?? 'N/A',
-                'category' => $item['category'] ?? 'N/A',
-                'location' => $item['location'] ?? 'N/A',
-                'purchase_date' => $item['purchase_date'] ?? 'N/A',
-                'value' => $item['value'] ?? 0,
-                'condition' => $item['condition'] ?? 'N/A',
-                'assigned_to' => $item['assigned_to_name'] ?? 'Unassigned',
-                'employee_id' => isset($item['assigned']) ? $item['assigned'] : null,
-                'status' => $item['status'] ?? 'N/A',
-                'property_no' => $item['property_no'] ?? 'N/A',
-                'serial_no' => $item['serial_no'] ?? 'N/A',
-                'serviceable' => $item['serviceable'] ?? 'N/A',
-                'unserviceable' => $item['unserviceable'] ?? 'N/A',
-                'coa_representative' => $item['coa_representative'] ?? 'N/A',
-                'coa_date' => $item['coa_date'] ?? 'N/A',
-                'assigned_date' => $item['assigned_date'] ?? 'N/A',
-                'unit_qty' => $item['unit_qty'] ?? 0,
-                'return_date' => $item['return_date'] ?? null,
-                'image' => isset($item['image']) && $item['image'] ? Storage::url($item['image']) : null,
-                'archived_at' => $item['archived_at'] ?? 'N/A',
-            ];
-        }, array_values($archivedInventory));
-
-        Log::info('InventoryController: Fetched archived inventory from storage', [
-            'inventory_count' => count($formattedInventory),
-            'data' => $formattedInventory,
-        ]);
-
-        return Inertia::render('inventory/Archived', [
-            'archivedInventory' => $formattedInventory,
-            'error' => null,
-        ]);
-    } catch (\Exception $e) {
-        Log::error('InventoryController: Failed to fetch archived inventory', [
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-        ]);
-        return Inertia::render('inventory/Archived', [
-            'archivedInventory' => [],
-            'error' => 'Failed to load archived inventory: ' . $e->getMessage(),
-        ]);
     }
-}
 
-public function unarchive(Request $request, $archivedInventoryId)
+    public function unarchive(Request $request, $archivedInventoryId)
     {
         try {
             DB::beginTransaction();
@@ -345,7 +356,7 @@ public function unarchive(Request $request, $archivedInventoryId)
                 : [];
             $archivedItem = $archivedInventory[$archivedInventoryId] ?? null;
 
-            if (!$archivedItem) {
+            if (! $archivedItem) {
                 throw new \Exception('Archived inventory not found.');
             }
 
@@ -379,8 +390,8 @@ public function unarchive(Request $request, $archivedInventoryId)
             ]);
 
             $inventory->update([
-    'assigned_to_name' => $archivedItem['assigned_to_name'] ?? null,
-]);
+                'assigned_to_name' => $archivedItem['assigned_to_name'] ?? null,
+            ]);
 
             // Remove from storage
             unset($archivedInventory[$archivedInventoryId]);
@@ -399,7 +410,8 @@ public function unarchive(Request $request, $archivedInventoryId)
             Log::error('InventoryController: Failed to unarchive inventory', [
                 'error' => $e->getMessage(),
             ]);
-            return back()->withErrors(['general' => 'Failed to unarchive inventory: ' . $e->getMessage()]);
+
+            return back()->withErrors(['general' => 'Failed to unarchive inventory: '.$e->getMessage()]);
         }
     }
 
@@ -413,8 +425,9 @@ public function unarchive(Request $request, $archivedInventoryId)
                         $employee->first_name,
                         $employee->middle_name,
                         $employee->last_name,
-                    ], fn($value) => !is_null($value) && $value !== ''))
+                    ], fn ($value) => ! is_null($value) && $value !== ''))
                 ) ?: 'Unnamed Employee';
+
                 return [
                     'id' => $employee->id,
                     'full_name' => $fullName,
@@ -422,13 +435,13 @@ public function unarchive(Request $request, $archivedInventoryId)
             })->toArray();
 
             $assignedTo = $inventory->assigned ? Employee::find($inventory->assigned) : null;
-            $fullName = $assignedTo 
+            $fullName = $assignedTo
                 ? trim(
                     implode(' ', array_filter([
                         $assignedTo->first_name,
                         $assignedTo->middle_name,
                         $assignedTo->last_name,
-                    ], fn($value) => !is_null($value) && $value !== ''))
+                    ], fn ($value) => ! is_null($value) && $value !== ''))
                 ) ?: 'Unnamed Employee'
                 : 'Unassigned';
 
@@ -446,8 +459,8 @@ public function unarchive(Request $request, $archivedInventoryId)
                 'unserviceable' => (float) ($inventory->unserviceable ?? 0),
                 'coa_representative' => $inventory->coa_representative ?? '',
                 'coa_date' => $inventory->coa_date ?? '',
-                'assigned' => $inventory->assigned !== null ? (int)$inventory->assigned : null,
-                'assigned_to' => $inventory->assigned !== null ? (int)$inventory->assigned : null,
+                'assigned' => $inventory->assigned !== null ? (int) $inventory->assigned : null,
+                'assigned_to' => $inventory->assigned !== null ? (int) $inventory->assigned : null,
                 'full_name' => $fullName,
                 'assigned_date' => $inventory->assigned_date ?? '',
                 'unit_qty' => (int) ($inventory->unit_qty ?? 1),
@@ -475,6 +488,7 @@ public function unarchive(Request $request, $archivedInventoryId)
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
+
             return Inertia::render('inventory/Edit', [
                 'item' => [
                     'id' => $asset_id,
@@ -505,8 +519,9 @@ public function unarchive(Request $request, $archivedInventoryId)
                             $employee->first_name,
                             $employee->middle_name,
                             $employee->last_name,
-                        ], fn($value) => !is_null($value) && $value !== ''))
+                        ], fn ($value) => ! is_null($value) && $value !== ''))
                     ) ?: 'Unnamed Employee';
+
                     return [
                         'id' => $employee->id,
                         'full_name' => $fullName,
@@ -547,13 +562,13 @@ public function unarchive(Request $request, $archivedInventoryId)
             ]);
 
             $assignedTo = $request->input('assigned') ? Employee::find($request->input('assigned')) : null;
-            $fullName = $assignedTo 
+            $fullName = $assignedTo
                 ? trim(
                     implode(' ', array_filter([
                         $assignedTo->first_name,
                         $assignedTo->middle_name,
                         $assignedTo->last_name,
-                    ], fn($value) => !is_null($value) && $value !== ''))
+                    ], fn ($value) => ! is_null($value) && $value !== ''))
                 ) ?: 'Unnamed Employee'
                 : 'Unassigned';
 
@@ -587,8 +602,9 @@ public function unarchive(Request $request, $archivedInventoryId)
                             $employee->first_name,
                             $employee->middle_name,
                             $employee->last_name,
-                        ], fn($value) => !is_null($value) && $value !== ''))
+                        ], fn ($value) => ! is_null($value) && $value !== ''))
                     ) ?: 'Unnamed Employee';
+
                     return [
                         'id' => $employee->id,
                         'full_name' => $fullName,
@@ -604,7 +620,7 @@ public function unarchive(Request $request, $archivedInventoryId)
             $inventory = Inventory::where('asset_id', $asset_id)->firstOrFail();
             $data = $request->all();
             if ($request->has('assigned_to')) {
-                $data['assigned'] = $request->input('assigned_to') !== '' ? (int)$request->input('assigned_to') : null;
+                $data['assigned'] = $request->input('assigned_to') !== '' ? (int) $request->input('assigned_to') : null;
                 unset($data['assigned_to']);
             }
 
@@ -615,9 +631,10 @@ public function unarchive(Request $request, $archivedInventoryId)
                 }
                 $file = $request->file('image');
                 $path = $file->store('assets', 'public');
-                if (!Storage::disk('public')->exists($path)) {
+                if (! Storage::disk('public')->exists($path)) {
                     Log::error('Image storage failed', ['path' => $path]);
                     DB::rollBack();
+
                     return Inertia::render('inventory/Edit', [
                         'item' => [
                             'id' => $asset_id,
@@ -648,8 +665,9 @@ public function unarchive(Request $request, $archivedInventoryId)
                                     $employee->first_name,
                                     $employee->middle_name,
                                     $employee->last_name,
-                                ], fn($value) => !is_null($value) && $value !== ''))
+                                ], fn ($value) => ! is_null($value) && $value !== ''))
                             ) ?: 'Unnamed Employee';
+
                             return [
                                 'id' => $employee->id,
                                 'full_name' => $fullName,
@@ -700,15 +718,16 @@ public function unarchive(Request $request, $archivedInventoryId)
                 'request_data' => $request->all(),
             ]);
             $assignedTo = $request->input('assigned') ? Employee::find($request->input('assigned')) : null;
-            $fullName = $assignedTo 
+            $fullName = $assignedTo
                 ? trim(
                     implode(' ', array_filter([
                         $assignedTo->first_name,
                         $assignedTo->middle_name,
                         $assignedTo->last_name,
-                    ], fn($value) => !is_null($value) && $value !== ''))
+                    ], fn ($value) => ! is_null($value) && $value !== ''))
                 ) ?: 'Unnamed Employee'
                 : 'Unassigned';
+
             return Inertia::render('inventory/Edit', [
                 'item' => [
                     'id' => $asset_id,
@@ -739,14 +758,15 @@ public function unarchive(Request $request, $archivedInventoryId)
                             $employee->first_name,
                             $employee->middle_name,
                             $employee->last_name,
-                        ], fn($value) => !is_null($value) && $value !== ''))
+                        ], fn ($value) => ! is_null($value) && $value !== ''))
                     ) ?: 'Unnamed Employee';
+
                     return [
                         'id' => $employee->id,
                         'full_name' => $fullName,
                     ];
                 })->toArray(),
-                'errors' => ['general' => 'Failed to update inventory item: ' . $e->getMessage()],
+                'errors' => ['general' => 'Failed to update inventory item: '.$e->getMessage()],
             ]);
         }
     }
@@ -761,161 +781,83 @@ public function unarchive(Request $request, $archivedInventoryId)
             }
 
             $inventory->delete();
-            Log::info('InventoryController@destroy: Asset deleted: ' . json_encode($inventory->toArray()));
+            Log::info('InventoryController@destroy: Asset deleted: '.json_encode($inventory->toArray()));
 
             DB::commit();
+
             return redirect()->route('inventory.index')->with('message', 'Asset deleted successfully');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error in InventoryController@destroy: ' . $e->getMessage() . ' | Trace: ' . $e->getTraceAsString());
-            return back()->withErrors(['general' => 'Failed to delete asset: ' . $e->getMessage()]);
+            Log::error('Error in InventoryController@destroy: '.$e->getMessage().' | Trace: '.$e->getTraceAsString());
+
+            return back()->withErrors(['general' => 'Failed to delete asset: '.$e->getMessage()]);
         }
     }
 
-public function view(Request $request, $inventory)
-{
-    Log::info('View Method Called', ['inventory_param' => $inventory]);
-
-    $inventoryModel = Inventory::where('asset_id', $inventory)->first();
-    Log::info('Inventory Query', [
-        'asset_id' => $inventory,
-        'result' => $inventoryModel ? $inventoryModel->toArray() : null
-    ]);
-
-    if (!$inventoryModel) {
-        Log::error('Inventory not found', ['asset_id' => $inventory]);
-        return Inertia::render('inventory/View', [
-            'asset' => null,
-            'error' => 'Asset not found for ID: ' . $inventory
-        ]);
-    }
-
-    // Assigned name
-    $assignedTo = $inventoryModel->assigned
-        ? Employee::find($inventoryModel->assigned)
-        : null;
-
-    $fullName = $assignedTo
-        ? trim("{$assignedTo->first_name} {$assignedTo->middle_name} {$assignedTo->last_name}")
-        : 'Unassigned';
-
-    // Prefer stored assigned_to_name if present
-    if ($inventoryModel->assigned_to_name) {
-        $fullName = $inventoryModel->assigned_to_name;
-    }
-
-    // --------------------------------------------
-    // FIXED QR URL (NO DUPLICATE etams_2025/public)
-    // --------------------------------------------
-    $viewUrl = url("inventory/tag/" . $inventoryModel->asset_id);
-
-    Log::info('QR Code URL', ['url' => $viewUrl]);
-
-    try {
-        $qrCode = new QrCode($viewUrl);
-        $writer = new PngWriter();
-        $result = $writer->write($qrCode);
-
-        $qrCodeBase64 =
-            'data:image/png;base64,' . base64_encode($result->getString());
-
-        Log::info('Viewing Asset', [
-            'asset_id' => $inventoryModel->asset_id,
-            'assigned_to' => $inventoryModel->assigned_to_name,
-            'full_name' => $fullName,
-            'image' => $inventoryModel->image ? Storage::url($inventoryModel->image) : null,
-        ]);
-    } catch (\Exception $e) {
-        Log::error('QR Code Generation Failed in View', [
-            'asset_id' => $inventoryModel->asset_id,
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
-        $qrCodeBase64 = null;
-    }
-
-    // Assemble asset data
-    $assetData = [
-        'id' => (string) $inventoryModel->asset_id,
-        'name' => (string) $inventoryModel->name,
-        'category' => (string) $inventoryModel->category,
-        'location' => (string) $inventoryModel->location,
-        'purchase_date' => (string) $inventoryModel->purchase_date,
-        'value' => (float) $inventoryModel->value,
-        'condition' => (string) $inventoryModel->condition,
-        'assigned_to' => (string) $fullName,
-        'employee_id' => $inventoryModel->assigned ? (int)$inventoryModel->assigned : null,
-        'status' => (string) $inventoryModel->status,
-        'property_no' => (string) $inventoryModel->property_no,
-        'serial_no' => (string) $inventoryModel->serial_no,
-        'serviceable' => (string) $inventoryModel->serviceable,
-        'unserviceable' => (string) $inventoryModel->unserviceable,
-        'coa_representative' => (string) $inventoryModel->coa_representative,
-        'coa_date' => (string) $inventoryModel->coa_date,
-        'assigned_date' => (string) $inventoryModel->assigned_date,
-        'unit_qty' => (float) $inventoryModel->unit_qty,
-        'qr_code' => $qrCodeBase64,
-        'image' => $inventoryModel->image ? asset(Storage::url($inventoryModel->image)) : null,
-    ];
-
-    Log::info('View Asset Data', ['asset' => $assetData]);
-
-    return Inertia::render('inventory/View', [
-        'asset' => $assetData,
-        'error' => null
-    ]);
-}
-
-
-    public function tag(Request $request, $inventory)
+    public function view(Request $request, $inventory)
     {
-        Log::info('Tag Method Called', ['inventory_param' => $inventory]);
-    
+        Log::info('View Method Called', ['inventory_param' => $inventory]);
+
         $inventoryModel = Inventory::where('asset_id', $inventory)->first();
-        Log::info('Inventory Query', ['asset_id' => $inventory, 'result' => $inventoryModel ? $inventoryModel->toArray() : null]);
-    
-        if (!$inventoryModel) {
+        Log::info('Inventory Query', [
+            'asset_id' => $inventory,
+            'result' => $inventoryModel ? $inventoryModel->toArray() : null,
+        ]);
+
+        if (! $inventoryModel) {
             Log::error('Inventory not found', ['asset_id' => $inventory]);
-            return Inertia::render('inventory/AssetTag', [
+
+            return Inertia::render('inventory/View', [
                 'asset' => null,
-                'error' => 'Asset not found for ID: ' . $inventory
+                'error' => 'Asset not found for ID: '.$inventory,
             ]);
         }
-    
-        $fullName = $inventoryModel->assigned_to_name;
-        $assignedTo = $inventoryModel->assigned ? Employee::find($inventoryModel->assigned) : null;
-        $fullName = $assignedTo 
+
+        // Assigned name
+        $assignedTo = $inventoryModel->assigned
+            ? Employee::find($inventoryModel->assigned)
+            : null;
+
+        $fullName = $assignedTo
             ? trim("{$assignedTo->first_name} {$assignedTo->middle_name} {$assignedTo->last_name}")
             : 'Unassigned';
-    
-        $tagUrl = $request->getSchemeAndHttpHost() . route(
-            'inventory.tag',
-            ['inventory' => $inventoryModel->asset_id],
-            false
-        );
-    
-        Log::info('QR Code URL', ['url' => $tagUrl]);
-    
+
+        // Prefer stored assigned_to_name if present
+        if ($inventoryModel->assigned_to_name) {
+            $fullName = $inventoryModel->assigned_to_name;
+        }
+
+        // --------------------------------------------
+        // FIXED QR URL (NO DUPLICATE etams_2025/public)
+        // --------------------------------------------
+        $viewUrl = url('inventory/tag/'.$inventoryModel->asset_id);
+
+        Log::info('QR Code URL', ['url' => $viewUrl]);
+
         try {
-            $qrCode = new QrCode($tagUrl);
-            $writer = new PngWriter();
+            $qrCode = new QrCode($viewUrl);
+            $writer = new PngWriter;
             $result = $writer->write($qrCode);
-            $qrCodeBase64 = 'data:image/png;base64,' . base64_encode($result->getString());
-            Log::info('Viewing Asset Tag', [
+
+            $qrCodeBase64 =
+                'data:image/png;base64,'.base64_encode($result->getString());
+
+            Log::info('Viewing Asset', [
                 'asset_id' => $inventoryModel->asset_id,
-                'assigned' => $inventoryModel->assigned,
+                'assigned_to' => $inventoryModel->assigned_to_name,
                 'full_name' => $fullName,
                 'image' => $inventoryModel->image ? Storage::url($inventoryModel->image) : null,
             ]);
         } catch (\Exception $e) {
-            Log::error('QR Code Generation Failed in Tag', [
+            Log::error('QR Code Generation Failed in View', [
                 'asset_id' => $inventoryModel->asset_id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
             $qrCodeBase64 = null;
         }
-    
+
+        // Assemble asset data
         $assetData = [
             'id' => (string) $inventoryModel->asset_id,
             'name' => (string) $inventoryModel->name,
@@ -925,7 +867,7 @@ public function view(Request $request, $inventory)
             'value' => (float) $inventoryModel->value,
             'condition' => (string) $inventoryModel->condition,
             'assigned_to' => (string) $fullName,
-            'employee_id' => $inventoryModel->assigned ? (int)$inventoryModel->assigned : null,
+            'employee_id' => $inventoryModel->assigned ? (int) $inventoryModel->assigned : null,
             'status' => (string) $inventoryModel->status,
             'property_no' => (string) $inventoryModel->property_no,
             'serial_no' => (string) $inventoryModel->serial_no,
@@ -936,14 +878,95 @@ public function view(Request $request, $inventory)
             'assigned_date' => (string) $inventoryModel->assigned_date,
             'unit_qty' => (float) $inventoryModel->unit_qty,
             'qr_code' => $qrCodeBase64,
-           'image' => $inventoryModel->image ? asset(Storage::url($inventoryModel->image)) : null,
+            'image' => $inventoryModel->image ? asset(Storage::url($inventoryModel->image)) : null,
         ];
-    
+
+        Log::info('View Asset Data', ['asset' => $assetData]);
+
+        return Inertia::render('inventory/View', [
+            'asset' => $assetData,
+            'error' => null,
+        ]);
+    }
+
+    public function tag(Request $request, $inventory)
+    {
+        Log::info('Tag Method Called', ['inventory_param' => $inventory]);
+
+        $inventoryModel = Inventory::where('asset_id', $inventory)->first();
+        Log::info('Inventory Query', ['asset_id' => $inventory, 'result' => $inventoryModel ? $inventoryModel->toArray() : null]);
+
+        if (! $inventoryModel) {
+            Log::error('Inventory not found', ['asset_id' => $inventory]);
+
+            return Inertia::render('inventory/AssetTag', [
+                'asset' => null,
+                'error' => 'Asset not found for ID: '.$inventory,
+            ]);
+        }
+
+        $fullName = $inventoryModel->assigned_to_name;
+        $assignedTo = $inventoryModel->assigned ? Employee::find($inventoryModel->assigned) : null;
+        $fullName = $assignedTo
+            ? trim("{$assignedTo->first_name} {$assignedTo->middle_name} {$assignedTo->last_name}")
+            : 'Unassigned';
+
+        $tagUrl = $request->getSchemeAndHttpHost().route(
+            'inventory.tag',
+            ['inventory' => $inventoryModel->asset_id],
+            false
+        );
+
+        Log::info('QR Code URL', ['url' => $tagUrl]);
+
+        try {
+            $qrCode = new QrCode($tagUrl);
+            $writer = new PngWriter;
+            $result = $writer->write($qrCode);
+            $qrCodeBase64 = 'data:image/png;base64,'.base64_encode($result->getString());
+            Log::info('Viewing Asset Tag', [
+                'asset_id' => $inventoryModel->asset_id,
+                'assigned' => $inventoryModel->assigned,
+                'full_name' => $fullName,
+                'image' => $inventoryModel->image ? Storage::url($inventoryModel->image) : null,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('QR Code Generation Failed in Tag', [
+                'asset_id' => $inventoryModel->asset_id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            $qrCodeBase64 = null;
+        }
+
+        $assetData = [
+            'id' => (string) $inventoryModel->asset_id,
+            'name' => (string) $inventoryModel->name,
+            'category' => (string) $inventoryModel->category,
+            'location' => (string) $inventoryModel->location,
+            'purchase_date' => (string) $inventoryModel->purchase_date,
+            'value' => (float) $inventoryModel->value,
+            'condition' => (string) $inventoryModel->condition,
+            'assigned_to' => (string) $fullName,
+            'employee_id' => $inventoryModel->assigned ? (int) $inventoryModel->assigned : null,
+            'status' => (string) $inventoryModel->status,
+            'property_no' => (string) $inventoryModel->property_no,
+            'serial_no' => (string) $inventoryModel->serial_no,
+            'serviceable' => (string) $inventoryModel->serviceable,
+            'unserviceable' => (string) $inventoryModel->unserviceable,
+            'coa_representative' => (string) $inventoryModel->coa_representative,
+            'coa_date' => (string) $inventoryModel->coa_date,
+            'assigned_date' => (string) $inventoryModel->assigned_date,
+            'unit_qty' => (float) $inventoryModel->unit_qty,
+            'qr_code' => $qrCodeBase64,
+            'image' => $inventoryModel->image ? asset(Storage::url($inventoryModel->image)) : null,
+        ];
+
         Log::info('Tag Asset Data', ['asset' => $assetData]);
-    
+
         return Inertia::render('inventory/AssetTag', [
             'asset' => $assetData,
-            'error' => null
+            'error' => null,
         ]);
     }
 }

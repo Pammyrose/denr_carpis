@@ -47,17 +47,18 @@ class Inventory extends Model
             return $value;
         }
 
-        if (!$this->assigned) {
+        if (! $this->assigned) {
             return 'Unassigned';
         }
 
         $employee = Employee::find($this->assigned);
-        if (!$employee) {
+        if (! $employee) {
             return 'Unassigned (Archived)';
         }
 
         return trim("{$employee->first_name} {$employee->middle_name} {$employee->last_name}");
     }
+
     /**
      * Get the employee assigned to this asset.
      */

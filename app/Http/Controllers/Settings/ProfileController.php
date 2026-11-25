@@ -16,7 +16,7 @@ class ProfileController extends Controller
     /**
      * Show the user's profile settings page.
      */
-public function edit(Request $request): Response
+    public function edit(Request $request): Response
     {
         $user = $request->user()->load('employee');
 
@@ -31,12 +31,14 @@ public function edit(Request $request): Response
     /**
      * Update the user's profile information.
      */
-public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         $user = $request->user();
+        $employee = $user->employee;
 
-        // Update email on users table
-        $user->fill($request->only('email'));
+        $user->fill([
+            'email' => $request->email,
+        ]);
 
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
@@ -44,11 +46,12 @@ public function update(ProfileUpdateRequest $request): RedirectResponse
 
         $user->save();
 
-        // Update or create employee name fields
-        $user->employee()->updateOrCreate(
-            ['email' => $user->email],
-            $request->only(['first_name', 'middle_name', 'last_name', 'suffix'])
-        );
+        if ($employee) {
+            $employee->fill([
+                ...$request->only(['first_name', 'middle_name', 'last_name', 'suffix']),
+                'email' => $user->email,
+            ])->save();
+        }
 
         return to_route('profile.edit')->with('status', 'Profile updated successfully.');
     }
@@ -76,8 +79,8 @@ public function update(ProfileUpdateRequest $request): RedirectResponse
 
     public function show()
     {
-        $user = Auth::user()->load('employee'); 
-        
+        $user = Auth::user()->load('employee');
+
         return Inertia::render('ProfileComponent', [
             'user' => $user,
             'employee' => $user->employee,

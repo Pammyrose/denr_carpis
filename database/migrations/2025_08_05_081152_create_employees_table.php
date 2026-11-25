@@ -18,30 +18,16 @@ class CreateEmployeesTable extends Migration
             $table->string('email')->unique();
             $table->string('contact_no')->unique();
             $table->string('emp_status');
-            
 
-$table->string('position_name', 255)->nullable();
-$table->string('assignment_name', 255)->nullable();
-$table->string('div_sec_unit', 255)->nullable();
-
+            $table->string('position_name', 255)->nullable();
+            $table->string('assignment_name', 255)->nullable();
+            $table->string('div_sec_unit', 255)->nullable();
 
             $table->timestamps();
 
-// NOW add foreign keys (after columns exist)
-            $table->foreign('position_name')
-                  ->references('name')
-                  ->on('positions')
-                  ->onDelete('restrict');
-
-            $table->foreign('assignment_name')
-                  ->references('name')
-                  ->on('assignments') // Make sure this table exists!
-                  ->onDelete('restrict');
-
-            $table->foreign('div_sec_unit')
-                  ->references('name')
-                  ->on('div_sec_units') // Make sure this table exists!
-                  ->onDelete('restrict');
+            // These values reference human-readable names, and position names
+            // are intentionally not unique. Controllers validate them with
+            // `exists` rules instead of invalid foreign keys to non-unique text.
         });
     }
 

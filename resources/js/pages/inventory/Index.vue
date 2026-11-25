@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
-import { router, usePage, useForm, Link } from '@inertiajs/vue3';
 import Button from '@/components/ui/button/Button.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { type BreadcrumbItem } from '@/types';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import { computed, onMounted, ref, watch } from 'vue';
 import Create from './Create.vue';
 import Edit from './Edit.vue';
-import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/vue3';
 
 // Define the Inventory interface
 interface InventoryItem {
@@ -21,6 +20,14 @@ interface InventoryItem {
     employee_id: number | null;
     return_date: string;
     status: string;
+    value?: number;
+    property_no?: string;
+    serial_no?: string;
+    serviceable?: number;
+    unserviceable?: number;
+    coa_representative?: string;
+    coa_date?: string;
+    assigned_date?: string;
 }
 
 // Define the Employee interface
@@ -73,7 +80,7 @@ watch(
             }, 2000);
         }
     },
-    { immediate: true }
+    { immediate: true },
 );
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -92,11 +99,14 @@ const filteredAssets = computed(() => {
         return props.assets;
     }
     const query = searchQuery.value.toLowerCase().trim();
-    return props.assets.filter(item =>
-        item.name.toLowerCase().includes(query) ||
-        item.category.toLowerCase().includes(query) ||
-        item.location.toLowerCase().includes(query) ||
-        item.assigned_to.toLowerCase().includes(query)
+    return props.assets.filter(
+        (item) =>
+            item.name.toLowerCase().includes(query) ||
+            item.category.toLowerCase().includes(query) ||
+            item.location.toLowerCase().includes(query) ||
+            String(item.assigned_to ?? '')
+                .toLowerCase()
+                .includes(query),
     );
 });
 
@@ -135,7 +145,7 @@ const closeCreateModal = () => {
 const openEditModal = (item: InventoryItem) => {
     selectedItem.value = {
         ...item,
-        assigned_to: item.employee_id,
+        assigned_to: item.employee_id === null ? '' : String(item.employee_id),
     };
     console.log('Opening edit modal with item:', selectedItem.value);
     isEditModalOpen.value = true;
@@ -207,10 +217,10 @@ onMounted(() => {
             <div
                 v-if="alertMessage"
                 :class="{
-                    'bg-green-100 border-green-400 text-green-700': alertType === 'success',
-                    'bg-red-100 border-red-400 text-red-700': alertType === 'error',
+                    'border-green-400 bg-green-100 text-green-700': alertType === 'success',
+                    'border-red-400 bg-red-100 text-red-700': alertType === 'error',
                 }"
-                class="border-l-4 p-4 mb-4 rounded-r-md"
+                class="mb-4 rounded-r-md border-l-4 p-4"
                 role="alert"
             >
                 <p class="font-medium">{{ alertType === 'success' ? 'Success' : 'Error' }}</p>
@@ -218,44 +228,43 @@ onMounted(() => {
             </div>
 
             <!-- Search Input and Buttons -->
-            <div class="flex justify-between items-center mb-4">
+            <div class="mb-4 flex items-center justify-between">
                 <div class="flex gap-2">
-                    <Button
-                        @click="openCreateModal"
-                        class="bg-blue-600 text-white hover:bg-blue-700"
-                    >
-                        Create
-                    </Button>
-                    <Link
-    :href="route('inventory.archived')"
-    class="bg-gray-200 text-white px-4 py-2 rounded-md"
->
-     <svg class="w-4 h-4 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" viewBox="0 0 24 24">
-  <path fill-rule="evenodd" d="M20 10H4v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8ZM9 13v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1Z" clip-rule="evenodd"/>
-  <path d="M2 6a2 2 0 0 1 2-2h16a2 2 0 1 1 0 4H4a2 2 0 0 1-2-2Z"/>
-</svg>
-</Link>
+                    <Button @click="openCreateModal" class="bg-blue-600 text-white hover:bg-blue-700"> Create </Button>
+                    <Link :href="route('inventory.archived')" class="rounded-md bg-gray-200 px-4 py-2 text-white">
+                        <svg
+                            class="h-4 w-4 text-gray-800 dark:text-white"
+                            aria-hidden="true"
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="36"
+                            height="36"
+                            fill="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                fill-rule="evenodd"
+                                d="M20 10H4v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8ZM9 13v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1Z"
+                                clip-rule="evenodd"
+                            />
+                            <path d="M2 6a2 2 0 0 1 2-2h16a2 2 0 1 1 0 4H4a2 2 0 0 1-2-2Z" />
+                        </svg>
+                    </Link>
                 </div>
-                <div class="relative w-full max-w-md ml-5">
+                <div class="relative ml-5 w-full max-w-md">
                     <input
                         v-model="searchQuery"
                         type="text"
                         placeholder="Search..."
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     />
                     <svg
-                        class="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+                        class="absolute top-1/2 right-3 h-5 w-5 -translate-y-1/2 transform text-gray-400"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
                         xmlns="http://www.w3.org/2000/svg"
                     >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                        />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                 </div>
             </div>
@@ -263,28 +272,17 @@ onMounted(() => {
             <!-- Create Modal -->
             <div
                 v-if="isCreateModalOpen"
-                class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-xs"
+                class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-xs"
                 @click.self="closeCreateModal"
             >
-                <div class="bg-white rounded-xl shadow-lg w-full max-w-6xl p-6 relative border border-gray-300">
+                <div class="relative w-full max-w-6xl rounded-xl border border-gray-300 bg-white p-6 shadow-lg">
                     <button
                         @click="closeCreateModal"
                         class="absolute top-3 right-3 text-gray-600 hover:text-gray-800 focus:outline-none"
                         aria-label="Close modal"
                     >
-                        <svg
-                            class="w-6 h-6"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12"
-                            />
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                     <Create :closeModal="closeCreateModal" :employees="props.employees" />
@@ -294,28 +292,17 @@ onMounted(() => {
             <!-- Edit Modal -->
             <div
                 v-if="isEditModalOpen && selectedItem"
-                class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-xs"
+                class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-xs"
                 @click.self="closeEditModal"
             >
-                <div class="bg-white rounded-xl shadow-lg w-full max-w-6xl p-6 relative border border-gray-300">
+                <div class="relative w-full max-w-6xl rounded-xl border border-gray-300 bg-white p-6 shadow-lg">
                     <button
                         @click="closeEditModal"
                         class="absolute top-3 right-3 text-gray-600 hover:text-gray-800 focus:outline-none"
                         aria-label="Close modal"
                     >
-                        <svg
-                            class="w-6 h-6"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12"
-                            />
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                     <Edit :item="selectedItem" :employees="props.employees" :closeModal="closeEditModal" />
@@ -328,38 +315,22 @@ onMounted(() => {
                 class="fixed inset-0 z-50 flex items-center justify-center bg-transparent transition-opacity duration-300"
                 @click.self="closeConfirmArchiveModal"
             >
-                <div class="bg-white rounded-xl shadow-lg w-full max-w-md p-6 relative border border-gray-300">
+                <div class="relative w-full max-w-md rounded-xl border border-gray-300 bg-white p-6 shadow-lg">
                     <button
                         @click="closeConfirmArchiveModal"
                         class="absolute top-3 right-3 text-gray-600 hover:text-gray-800 focus:outline-none"
                         aria-label="Close modal"
                     >
-                        <svg
-                            class="w-6 h-6"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12"
-                            />
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                     <h2 class="text-lg font-semibold">Confirm Archiving</h2>
                     <p class="mt-2">Are you sure you want to archive this asset? This action cannot be undone without unarchiving.</p>
                     <div class="mt-4 flex justify-end gap-2">
+                        <Button @click="closeConfirmArchiveModal" class="bg-gray-300 text-gray-800 hover:bg-gray-400"> Cancel </Button>
                         <Button
-                            @click="closeConfirmArchiveModal"
-                            class="bg-gray-300 text-gray-800 hover:bg-gray-400"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            @click="archiveItem(props.assets.find(item => item.id === itemToArchive))"
+                            @click="archiveItem(props.assets.find((item) => item.id === itemToArchive))"
                             class="bg-yellow-600 text-white hover:bg-yellow-700"
                         >
                             Archive
@@ -369,9 +340,9 @@ onMounted(() => {
             </div>
 
             <!-- Inventory table -->
-            <div class="relative overflow-x-auto shadow-md sm:rounded-lg mt-4">
-                <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                    <thead class="text-xs text-white uppercase bg-gradient-to-b from-green-300 to-green-600">
+            <div class="relative mt-4 overflow-x-auto shadow-md sm:rounded-lg">
+                <table class="w-full text-left text-sm text-gray-500 rtl:text-right dark:text-gray-400">
+                    <thead class="bg-gradient-to-b from-green-300 to-green-600 text-xs text-white uppercase">
                         <tr>
                             <th scope="col" class="px-4 py-3">Asset ID</th>
                             <th scope="col" class="px-4 py-3 text-center">Name</th>
@@ -387,10 +358,12 @@ onMounted(() => {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="item in filteredAssets" :key="item.id"
-                            class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600"
+                        <tr
+                            v-for="item in filteredAssets"
+                            :key="item.id"
+                            class="border-b border-gray-200 bg-white hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-600"
                         >
-                            <th scope="row" class="px-4 py-1 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                            <th scope="row" class="px-4 py-1 font-medium whitespace-nowrap text-gray-900 dark:text-white">
                                 {{ item.id || 'N/A' }}
                             </th>
                             <td class="px-2 py-1 text-center">{{ item.name || 'N/A' }}</td>
@@ -404,32 +377,32 @@ onMounted(() => {
                             <td class="px-2 py-1 text-center">
                                 <span
                                     :class="{
-                                        'text-white bg-yellow-600 hover:bg-yellow-700': item.status === 'Good',
-                                        'text-white bg-red-700 hover:bg-red-800': item.status === 'Check',
-                                        'text-white bg-green-600 hover:bg-green-800': item.status === 'Repair',
-                                        'text-white bg-blue-700 hover:bg-blue-800': item.status === 'Upgrade',
+                                        'bg-yellow-600 text-white hover:bg-yellow-700': item.status === 'Good',
+                                        'bg-red-700 text-white hover:bg-red-800': item.status === 'Check',
+                                        'bg-green-600 text-white hover:bg-green-800': item.status === 'Repair',
+                                        'bg-blue-700 text-white hover:bg-blue-800': item.status === 'Upgrade',
                                     }"
-                                    class="font-medium rounded-full text-sm px-5 py-1.5 text-center me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300"
+                                    class="me-2 mb-2 rounded-full px-5 py-1.5 text-center text-sm font-medium focus:ring-4 focus:ring-blue-300 focus:outline-none dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
                                 >
                                     {{ item.status || 'N/A' }}
                                 </span>
                             </td>
-                            <td class="px-4 py-1 flex justify-center items-center gap-1">
+                            <td class="flex items-center justify-center gap-1 px-4 py-1">
                                 <Button
                                     @click="openEditModal(item)"
-                                    class="font-medium text-blue-600 bg-transparent hover:bg-transparent hover:underline border-0 shadow-none"
+                                    class="border-0 bg-transparent font-medium text-blue-600 shadow-none hover:bg-transparent hover:underline"
                                 >
                                     Edit
                                 </Button>
                                 <Link
                                     :href="route('inventory.view', { inventory: item.id })"
-                                    class="font-medium text-green-600 dark:text-green-500 hover:underline"
+                                    class="font-medium text-green-600 hover:underline dark:text-green-500"
                                 >
                                     View
                                 </Link>
                                 <Button
                                     @click="openConfirmArchiveModal(item.id)"
-                                    class="font-medium text-yellow-600 bg-transparent hover:bg-transparent hover:underline border-0 shadow-none"
+                                    class="border-0 bg-transparent font-medium text-yellow-600 shadow-none hover:bg-transparent hover:underline"
                                 >
                                     Archive
                                 </Button>
@@ -437,9 +410,7 @@ onMounted(() => {
                         </tr>
                     </tbody>
                 </table>
-                <div v-if="!filteredAssets.length" class="text-center py-4">
-                    No assets found.
-                </div>
+                <div v-if="!filteredAssets.length" class="py-4 text-center">No assets found.</div>
             </div>
         </div>
     </AppLayout>

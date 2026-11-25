@@ -15,7 +15,6 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->timestamps();
 
-
             $table->index('name');
         });
     }

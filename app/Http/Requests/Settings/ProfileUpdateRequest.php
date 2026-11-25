@@ -26,10 +26,10 @@ class ProfileUpdateRequest extends FormRequest
             ],
 
             // Employee name fields
-            'first_name'  => ['required', 'string', 'max:100'],
+            'first_name' => ['required', 'string', 'max:100'],
             'middle_name' => ['nullable', 'string', 'max:100'],
-            'last_name'   => ['required', 'string', 'max:100'],
-            'suffix'      => ['nullable', 'string', 'max:20'],
+            'last_name' => ['required', 'string', 'max:100'],
+            'suffix' => ['nullable', 'string', 'max:20'],
         ];
     }
 }

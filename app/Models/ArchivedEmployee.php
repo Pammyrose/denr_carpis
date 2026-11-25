@@ -39,8 +39,6 @@ class ArchivedEmployee extends Model
         return $this->belongsTo(Position::class, 'position_id');
     }
 
-
-
     public function assignment()
     {
         return $this->belongsTo(AssignmentPlace::class, 'assignment_id');

@@ -2,10 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
@@ -24,9 +23,9 @@ class UserSeeder extends Seeder
         // Create Admin's Employee Record
         $adminEmployee = $admin->employee()->create([
             'email' => 'admin@example.ph',
-            'first_name' => 'John',
-            'middle_name' => 'A',
-            'last_name' => 'Doe',
+            'first_name' => 'Admin',
+            'middle_name' => '',
+            'last_name' => 'Admin',
             'suffix' => null,
             'sex' => 'Male',
             'emp_status' => 'Regular',
@@ -38,12 +37,12 @@ class UserSeeder extends Seeder
 
         // Create Admin's Other Info
         $adminEmployee->otherInfo()->create([
-            'date_of_birth'       => '1990-01-01',
-            'tin_no'              => '123-456-789',
-            'date_appointment'    => '2020-06-01',
+            'date_of_birth' => '1990-01-01',
+            'tin_no' => '123-456-789',
+            'date_appointment' => '2020-06-01',
             'date_last_promotion' => '2023-06-01',
-            'civil_service'       => 'Professional',
-            'education'           => 'BS Computer Science',
+            'civil_service' => 'Professional',
+            'education' => 'BS Computer Science',
         ]);
 
         /** ==========================
@@ -59,9 +58,9 @@ class UserSeeder extends Seeder
         // Create Regular User's Employee Record
         $userEmployee = $user->employee()->create([
             'email' => 'user@example.com',
-            'first_name' => 'Jane',
-            'middle_name' => 'B',
-            'last_name' => 'Smith',
+            'first_name' => 'User',
+            'middle_name' => '',
+            'last_name' => 'User',
             'suffix' => null,
             'sex' => 'Female',
             'emp_status' => 'Regular',
@@ -73,12 +72,12 @@ class UserSeeder extends Seeder
 
         // Create User's Other Info
         $userEmployee->otherInfo()->create([
-            'date_of_birth'       => '1995-02-15',
-            'tin_no'              => '987-654-321',
-            'date_appointment'    => '2021-01-15',
+            'date_of_birth' => '1995-02-15',
+            'tin_no' => '987-654-321',
+            'date_appointment' => '2021-01-15',
             'date_last_promotion' => '2024-01-15',
-            'civil_service'       => 'Sub-Professional',
-            'education'           => 'BA Human Resources',
+            'civil_service' => 'Sub-Professional',
+            'education' => 'BA Human Resources',
         ]);
     }
 }

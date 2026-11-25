@@ -2,19 +2,20 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable
 {
-    use Notifiable;
+    use HasFactory, Notifiable;
 
     protected $fillable = [
-      
         'email',
         'password',
         'is_admin',
+        'office_scope',
         'email_verified_at',
     ];
 
@@ -25,7 +26,7 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'is_admin' => 'boolean',
+        'is_admin' => 'integer',
     ];
 
     // Optional: Direct relationship to employee via email (for easier querying)
@@ -35,12 +36,12 @@ class User extends Authenticatable
     }
 
     // Accessor for full_name (matches Profile.vue)
-public function getFullNameAttribute(): string
+    public function getFullNameAttribute(): string
     {
         $e = $this->employee;
 
-        if (!$e) {
-            return $this->name ?? 'Unknown User';
+        if (! $e) {
+            return 'Unknown User';
         }
 
         $parts = array_filter([
@@ -50,14 +51,16 @@ public function getFullNameAttribute(): string
             $e->suffix,
         ]);
 
-        return $parts ? implode(' ', $parts) : ($this->name ?? 'Unknown User');
+        return $parts ? implode(' ', $parts) : 'Unknown User';
     }
 
     // Accessor for role (matches Profile.vue)
     public function getRoleAttribute(): string
     {
-        return $this->is_admin ? 'Admin' : 'User';
+        return match ((int) $this->is_admin) {
+            2 => 'Admin',
+            1 => 'Super Admin',
+            default => 'User',
+        };
     }
-
 }
-

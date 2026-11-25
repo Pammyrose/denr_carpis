@@ -1,0 +1,20 @@
+flowchart TD
+    A[Open Employee page] --> B[EmployeeController index/create data]
+    B --> C[Send orgUnits + positions + assignmentPlaces + empStatuses to Inertia]
+    C --> D[Create.vue form loads]
+
+    D --> E[User selects Div/Sec Unit]
+    E --> F[Resolve selected unit org_code]
+    F --> G[Filter positions where position.org_code == selected org_code]
+    G --> H[Keep only Vacant positions]
+    H --> I[Render filtered Position dropdown]
+
+    E --> J{Current selected position still valid?}
+    J -- No --> K[Clear position and salary grade]
+    J -- Yes --> L[Keep current selection]
+
+    I --> M[User selects Position]
+    M --> N[Auto-fill Salary Grade]
+    N --> O[Submit form]
+    O --> P[EmployeeController store]
+    P --> Q[(employees + related tables)]

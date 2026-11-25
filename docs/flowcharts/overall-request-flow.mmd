@@ -1,0 +1,30 @@
+flowchart TD
+    A[User opens app] --> B[/ GET / ]
+    B --> C[Inertia renders auth/Login]
+
+    C --> D{Authenticated?}
+    D -- No --> E[Guest routes]
+    E --> E1[Login]
+    E --> E2[Register]
+    E --> E3[Forgot/Reset Password]
+
+    D -- Yes --> F{Verified?}
+    F -- No --> G[Email verification flow]
+    F -- Yes --> H{Admin?}
+
+    H -- No --> I[User profile page /profile]
+    I --> J[Settings routes]
+
+    H -- Yes --> K[Admin routes]
+    K --> K1[Dashboard]
+    K --> K2[Employee module]
+    K --> K3[Users module]
+    K --> K4[Org Unit / Position / Assignment endpoints]
+
+    K2 --> L[EmployeeController]
+    K3 --> M[UsersController]
+    K1 --> N[DashboardController]
+
+    L --> O[(MySQL tables)]
+    M --> O
+    N --> O

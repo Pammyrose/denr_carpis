@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\EmpStatus;
+use Illuminate\Database\Seeder;
 
 class EmpStatusSeeder extends Seeder
 {

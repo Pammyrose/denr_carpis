@@ -9,7 +9,7 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-public function up(): void
+    public function up(): void
     {
         Schema::create('emp_status', function (Blueprint $table) {
             $table->id();
@@ -17,7 +17,6 @@ public function up(): void
             $table->text('description')->nullable();   // long description
             $table->timestamps();
         });
-
 
     }
 

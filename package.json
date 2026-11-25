@@ -7,9 +7,14 @@
         "dev": "vite",
         "format": "prettier --write resources/",
         "format:check": "prettier --check resources/",
-        "lint": "eslint . --fix"
+        "lint": "eslint . --fix",
+        "flowchart:png:overall": "mmdc -i docs/flowcharts/overall-request-flow.mmd -o docs/flowcharts/overall-request-flow.png -s 2",
+        "flowchart:png:create": "mmdc -i docs/flowcharts/employee-create-flow.mmd -o docs/flowcharts/employee-create-flow.png -s 2",
+        "flowchart:png:routes": "mmdc -i docs/flowcharts/employee-route-flow.mmd -o docs/flowcharts/employee-route-flow.png -s 2",
+        "flowchart:png": "npm run flowchart:png:overall && npm run flowchart:png:create && npm run flowchart:png:routes"
     },
     "devDependencies": {
+        "@mermaid-js/mermaid-cli": "^11.9.0",
         "@eslint/js": "^9.19.0",
         "@types/node": "^22.13.5",
         "@vue/eslint-config-typescript": "^14.3.0",

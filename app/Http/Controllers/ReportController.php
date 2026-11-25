@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Inventory;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 class ReportController extends Controller
 {
@@ -16,8 +16,8 @@ class ReportController extends Controller
         try {
             $currentYear = Carbon::now()->year; // 2025
             $currentMonth = Carbon::now()->month; // 10
-            $selectedYear = min((int)$request->input('year', $currentYear), $currentYear);
-            $selectedMonth = min(max((int)$request->input('month', $currentMonth), 1), 12);
+            $selectedYear = min((int) $request->input('year', $currentYear), $currentYear);
+            $selectedMonth = min(max((int) $request->input('month', $currentMonth), 1), 12);
             $monthStart = Carbon::create($selectedYear, $selectedMonth, 1)->startOfMonth();
             $monthEnd = $monthStart->copy()->endOfMonth();
             $daysInMonth = $monthStart->daysInMonth;
@@ -38,7 +38,7 @@ class ReportController extends Controller
                 $found = $assetsByDay->get($date);
                 $allDays[] = [
                     'date' => $date,
-                    'quantity' => $found ? (int)$found->quantity : 0,
+                    'quantity' => $found ? (int) $found->quantity : 0,
                 ];
             }
 
@@ -49,8 +49,8 @@ class ReportController extends Controller
                 ->get()
                 ->map(function ($item) {
                     return [
-                        'value' => (string)($item->year ?? ''),
-                        'label' => (string)($item->year ?? ''),
+                        'value' => (string) ($item->year ?? ''),
+                        'label' => (string) ($item->year ?? ''),
                     ];
                 })
                 ->filter(function ($item) use ($currentYear) {
@@ -60,8 +60,8 @@ class ReportController extends Controller
 
             $staticYears = collect(range($currentYear - 3, $currentYear))->map(function ($year) {
                 return [
-                    'value' => (string)$year,
-                    'label' => (string)$year,
+                    'value' => (string) $year,
+                    'label' => (string) $year,
                 ];
             });
 
@@ -91,7 +91,7 @@ class ReportController extends Controller
                 $totalSpendByMonth[] = [
                     'month' => $date->format('Y-m'),
                     'label' => $date->format('M Y'),
-                    'totalSpend' => (float)$totalSpend ?: 0.0,
+                    'totalSpend' => (float) $totalSpend ?: 0.0,
                 ];
             }
             \Log::info('totalSpendByMonth Query:', DB::getQueryLog());
@@ -102,7 +102,7 @@ class ReportController extends Controller
                     ->groupBy('location')
                     ->get()
                     ->mapWithKeys(function ($item) {
-                        return [$item->location => ['name' => $item->location, 'value' => (int)$item->value]];
+                        return [$item->location => ['name' => $item->location, 'value' => (int) $item->value]];
                     })
                     ->toArray();
 
@@ -110,7 +110,7 @@ class ReportController extends Controller
 
                 Log::info('Assets by Location', ['data' => $assetsByLocation]);
             } catch (\Exception $e) {
-                Log::error('Error fetching assets by location: ' . $e->getMessage());
+                Log::error('Error fetching assets by location: '.$e->getMessage());
                 $assetsByLocation = [];
             }
 
@@ -118,17 +118,17 @@ class ReportController extends Controller
                 'assetsByDay' => $allDays,
                 'assetsByLocation' => $assetsByLocation,
                 'availableYears' => $availableYears->isEmpty() ? [[
-                    'value' => (string)$currentYear,
-                    'label' => (string)$currentYear,
+                    'value' => (string) $currentYear,
+                    'label' => (string) $currentYear,
                 ]] : $availableYears,
                 'availableMonths' => $availableMonths,
-                'selectedYear' => (string)$selectedYear,
+                'selectedYear' => (string) $selectedYear,
                 'selectedMonth' => sprintf('%02d', $selectedMonth),
                 'daysInMonth' => $daysInMonth,
                 'totalSpendByMonth' => $totalSpendByMonth,
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error in ReportController@index: ' . $e->getMessage(), ['exception' => $e->getTraceAsString()]);
+            \Log::error('Error in ReportController@index: '.$e->getMessage(), ['exception' => $e->getTraceAsString()]);
             abort(500, 'An error occurred while generating the report.');
         }
     }

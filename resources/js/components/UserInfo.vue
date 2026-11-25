@@ -17,14 +17,9 @@ const fullName = computed(() => {
     const e = props.user.employee;
     if (!e) return props.user.name ?? 'Unknown User';
 
-    const parts = [
-        e.first_name,
-        e.middle_name,
-        e.last_name,
-        e.suffix,
-    ].filter(Boolean) as string[];
+    const parts = [e.first_name, e.middle_name, e.last_name, e.suffix].filter(Boolean) as string[];
 
-    return parts.length ? parts.join(' ') : props.user.name ?? 'Unknown User';
+    return parts.length ? parts.join(' ') : (props.user.name ?? 'Unknown User');
 });
 
 const showAvatar = computed(() => !!props.user.avatar && props.user.avatar !== '');

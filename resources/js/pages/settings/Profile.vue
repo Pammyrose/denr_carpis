@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 
 import DeleteUser from '@/components/DeleteUser.vue';
 import HeadingSmall from '@/components/HeadingSmall.vue';
@@ -49,10 +49,7 @@ const submit = () => {
 
         <SettingsLayout>
             <div class="flex flex-col space-y-6">
-                <HeadingSmall
-                    title="Profile information"
-                    description="Update your personal details and email address"
-                />
+                <HeadingSmall title="Profile information" description="Update your personal details and email address" />
 
                 <form @submit.prevent="submit" class="space-y-6">
                     <!-- First Name -->
@@ -99,13 +96,7 @@ const submit = () => {
                     <!-- Suffix -->
                     <div class="grid gap-2">
                         <Label for="suffix">Suffix</Label>
-                        <Input
-                            id="suffix"
-                            class="mt-1 block w-full"
-                            v-model="form.suffix"
-                            autocomplete="honorific-suffix"
-                            placeholder="Jr."
-                        />
+                        <Input id="suffix" class="mt-1 block w-full" v-model="form.suffix" autocomplete="honorific-suffix" placeholder="Jr." />
                         <InputError class="mt-2" :message="form.errors.suffix" />
                     </div>
 
